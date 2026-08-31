@@ -1,0 +1,102 @@
+{
+  "dataset": "nextlink-plan-rooms-demo",
+  "lastUpdated": "2026-08-31T09:00:00+07:00",
+  "note": "จุฬาพัฒน์ = ภาคใช้ได้ทันที · ตึก 3 / ตึก 4 = ต้องยื่นเรื่องกับคณะวิศวะก่อน",
+  "rooms": [
+    {
+      "id": "cp4-1f",
+      "name": "จุฬาพัฒน์ 4 ชั้น 1",
+      "building": "จุฬาพัฒน์ 4",
+      "floor": "1",
+      "seats": 64,
+      "seatsIsEstimated": false,
+      "tier": "READY",
+      "blockedSlots": []
+    },
+    {
+      "id": "cp4-3f-hall",
+      "name": "จุฬาพัฒน์ 4 โถงกลาง ชั้น 3",
+      "building": "จุฬาพัฒน์ 4",
+      "floor": "3",
+      "seats": 236,
+      "seatsIsEstimated": false,
+      "tier": "READY",
+      "blockedSlots": [
+        { "slotId": "MON_AM", "reason": "ใช้จัดกิจกรรมภาควิชา" },
+        { "slotId": "MON_PM", "reason": "ใช้จัดกิจกรรมภาควิชา" }
+      ]
+    },
+    {
+      "id": "cp4-3f-a",
+      "name": "จุฬาพัฒน์ 4 ห้อง A ชั้น 3",
+      "building": "จุฬาพัฒน์ 4",
+      "floor": "3",
+      "seats": 64,
+      "seatsIsEstimated": false,
+      "tier": "READY",
+      "blockedSlots": []
+    },
+    {
+      "id": "cp4-3f-b",
+      "name": "จุฬาพัฒน์ 4 ห้อง B ชั้น 3",
+      "building": "จุฬาพัฒน์ 4",
+      "floor": "3",
+      "seats": 30,
+      "seatsIsEstimated": false,
+      "tier": "READY",
+      "blockedSlots": []
+    },
+    {
+      "id": "cp5-203",
+      "name": "จุฬาพัฒน์ 5 ห้อง 203",
+      "building": "จุฬาพัฒน์ 5",
+      "floor": "2",
+      "seats": 58,
+      "seatsIsEstimated": false,
+      "tier": "READY",
+      "blockedSlots": [
+        { "slotId": "TUE_AM", "reason": "วิชาบังคับของภาคใช้อยู่" }
+      ]
+    },
+    {
+      "id": "cp5-206",
+      "name": "จุฬาพัฒน์ 5 ห้อง 206",
+      "building": "จุฬาพัฒน์ 5",
+      "floor": "2",
+      "seats": 36,
+      "seatsIsEstimated": false,
+      "tier": "READY",
+      "blockedSlots": []
+    },
+    {
+      "id": "eng4-17-02",
+      "name": "ตึก 4 ชั้น 17 ห้อง 17-02",
+      "building": "ตึก 4 (คณะวิศวะ)",
+      "floor": "17",
+      "seats": 40,
+      "seatsIsEstimated": true,
+      "tier": "NEEDS_APPROVAL",
+      "blockedSlots": []
+    },
+    {
+      "id": "eng4-18-15",
+      "name": "ตึก 4 ชั้น 18 ห้อง 18-15",
+      "building": "ตึก 4 (คณะวิศวะ)",
+      "floor": "18",
+      "seats": 30,
+      "seatsIsEstimated": true,
+      "tier": "NEEDS_APPROVAL",
+      "blockedSlots": []
+    },
+    {
+      "id": "eng3-405",
+      "name": "ตึก 3 ชั้น 4 ห้อง 405",
+      "building": "ตึก 3 (คณะวิศวะ)",
+      "floor": "4",
+      "seats": 50,
+      "seatsIsEstimated": true,
+      "tier": "NEEDS_APPROVAL",
+      "blockedSlots": []
+    }
+  ]
+}

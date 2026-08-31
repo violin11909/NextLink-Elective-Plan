@@ -1,0 +1,26 @@
+{
+  "name": "nextlink-elective-plan",
+  "version": "0.3.0",
+  "private": true,
+  "description": "NextLink elective-course schedule planner built with Next.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "node .next/standalone/server.js",
+    "check": "tsc --noEmit && npm run check:css && npm run check:pages && npm run check:scheduler",
+    "check:css": "node scripts/check-css.mjs",
+    "check:pages": "node scripts/check-consistency.mjs",
+    "check:scheduler": "node --experimental-strip-types scripts/check-scheduler.mjs"
+  },
+  "dependencies": {
+    "next": "^15.5.0",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "typescript": "^5.8.0"
+  }
+}

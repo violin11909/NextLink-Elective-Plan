@@ -1,0 +1,302 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Term {
+  FIRST
+  SECOND
+  SUMMER
+}
+
+enum DeliveryMode {
+  ON_SITE
+  HYBRID
+  ONLINE
+}
+
+enum CourseStatus {
+  DRAFT
+  READY
+  OPEN
+  REVIEWING
+  WAITING
+}
+
+enum DocumentStatus {
+  COMPLETE
+  WAITING_INSTRUCTOR
+  MISSING_SYLLABUS
+  WAITING_ROOM
+}
+
+enum InvitationStatus {
+  SIGNED
+  WAITING_SIGNATURE
+  WAITING_DRAFT
+  NEEDS_CORRECTION
+}
+
+enum McvStatus {
+  OPEN
+  PREPARING
+  NOT_OPEN
+}
+
+enum ContactRole {
+  INSTRUCTOR
+  COORDINATOR
+}
+
+enum DocumentType {
+  COURSE_OPENING_FORM
+  SYLLABUS
+  INVITATION_LETTER
+  OTHER
+}
+
+enum DocumentLifecycle {
+  DRAFT
+  SUBMITTED
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+enum StatusKind {
+  COURSE
+  DOCUMENT
+  INVITATION
+  MCV
+}
+
+enum ScheduleExceptionType {
+  CANCELLED
+  RESCHEDULED
+  ROOM_CHANGED
+  ONLINE_ONLY
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  DROPPED
+  COMPLETED
+}
+
+enum FeedbackSource {
+  STUDENT
+  STAFF
+}
+
+enum WorkflowTaskStatus {
+  RECEIVED
+  NOT_RECEIVED
+  IN_PROGRESS
+  DONE
+  BLOCKED
+  NOT_APPLICABLE
+  UNKNOWN
+}
+
+model Category {
+  id        String           @id @default(cuid())
+  name      String           @unique
+  createdAt DateTime         @default(now())
+  offerings CourseOffering[]
+}
+
+model Organization {
+  id        String           @id @default(cuid())
+  name      String           @unique
+  createdAt DateTime         @default(now())
+  contacts  Contact[]
+  offerings CourseOffering[]
+}
+
+model Contact {
+  id             String                  @id @default(cuid())
+  displayName    String
+  email          String?                 @unique
+  phone          String?
+  lineId         String?
+  organizationId String?
+  organization   Organization?           @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  offerings      CourseOfferingContact[]
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  @@index([organizationId])
+  @@index([displayName])
+}
+
+model CourseOffering {
+  id                  String                  @id @default(cuid())
+  academicYear        Int
+  term                Term
+  courseCode          String
+  title               String
+  categoryId          String
+  organizationId      String
+  section             String
+  deliveryMode        DeliveryMode
+  timezone            String                  @default("Asia/Bangkok")
+  weeks               Int
+  capacity            Int?
+  courseStatus        CourseStatus            @default(DRAFT)
+  documentsStatus     DocumentStatus          @default(WAITING_INSTRUCTOR)
+  invitationStatus    InvitationStatus        @default(WAITING_DRAFT)
+  mcvStatus           McvStatus               @default(NOT_OPEN)
+  mcvJoinCode         String?
+  notes               String?
+  sourceKey           String?                 @unique
+  sourceSystem        String?
+  sourceSpreadsheetId String?
+  sourceSheetName     String?
+  sourceRowNumber     Int?
+  sourceHash          String?
+  rawPayload          Json?
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  category            Category                @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  organization        Organization            @relation(fields: [organizationId], references: [id], onDelete: Restrict)
+  contacts            CourseOfferingContact[]
+  sessions            CourseSession[]
+  enrollments         CourseEnrollment[]
+  documents           CourseDocument[]
+  statusHistory       CourseStatusHistory[]
+  feedbacks           CourseFeedback[]
+  scheduleExceptions  ScheduleException[]
+  workflowTasks       CourseWorkflowTask[]
+
+  @@unique([academicYear, term, courseCode, section])
+  @@index([categoryId])
+  @@index([organizationId])
+  @@index([courseStatus])
+  @@index([academicYear, term])
+}
+
+model CourseOfferingContact {
+  offeringId String
+  contactId  String
+  role       ContactRole
+  isPrimary  Boolean        @default(false)
+  offering   CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+  contact    Contact        @relation(fields: [contactId], references: [id], onDelete: Restrict)
+
+  @@id([offeringId, contactId, role])
+  @@index([contactId])
+}
+
+model CourseSession {
+  id         String         @id @default(cuid())
+  offeringId String
+  dayOfWeek  Int
+  startTime  DateTime       @db.Time(0)
+  endTime    DateTime       @db.Time(0)
+  timezone   String         @default("Asia/Bangkok")
+  location   String?
+  onlineUrl  String?
+  validFrom  DateTime?      @db.Date
+  validUntil DateTime?      @db.Date
+  offering   CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@index([offeringId, dayOfWeek, startTime])
+  @@index([dayOfWeek, startTime, endTime])
+}
+
+model CourseEnrollment {
+  id         String           @id @default(cuid())
+  offeringId String
+  studentRef String
+  status     EnrollmentStatus @default(ENROLLED)
+  enrolledAt DateTime         @default(now())
+  droppedAt  DateTime?
+  offering   CourseOffering   @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@unique([offeringId, studentRef])
+  @@index([offeringId, status])
+}
+
+model CourseDocument {
+  id           String            @id @default(cuid())
+  offeringId   String
+  type         DocumentType
+  version      Int               @default(1)
+  filename     String
+  storageKey   String?
+  externalUrl  String?
+  sourceFileId String?
+  mimeType     String?
+  status       DocumentLifecycle @default(DRAFT)
+  submittedAt  DateTime?
+  approvedAt   DateTime?
+  createdBy    String?
+  createdAt    DateTime          @default(now())
+  offering     CourseOffering    @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@unique([offeringId, type, version])
+  @@index([offeringId, type])
+}
+
+model CourseStatusHistory {
+  id         String         @id @default(cuid())
+  offeringId String
+  statusKind StatusKind
+  fromValue  String?
+  toValue    String
+  changedBy  String?
+  note       String?
+  changedAt  DateTime       @default(now())
+  offering   CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@index([offeringId, statusKind, changedAt])
+}
+
+model CourseFeedback {
+  id          String         @id @default(cuid())
+  offeringId  String
+  rating      Decimal        @db.Decimal(2, 1)
+  comment     String?
+  source      FeedbackSource @default(STUDENT)
+  isAnonymous Boolean        @default(true)
+  submittedAt DateTime       @default(now())
+  offering    CourseOffering @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@index([offeringId, submittedAt])
+}
+
+model ScheduleException {
+  id          String                @id @default(cuid())
+  offeringId  String
+  type        ScheduleExceptionType
+  sessionDate DateTime?             @db.Date
+  note        String
+  createdAt   DateTime              @default(now())
+  offering    CourseOffering        @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@index([offeringId, sessionDate])
+}
+
+model CourseWorkflowTask {
+  id           String             @id @default(cuid())
+  offeringId   String
+  taskKey      String
+  label        String
+  status       WorkflowTaskStatus @default(UNKNOWN)
+  rawStatus    String?
+  detail       String?
+  referenceUrl String?
+  targetDate   DateTime?          @db.Date
+  updatedBy    String?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  offering     CourseOffering     @relation(fields: [offeringId], references: [id], onDelete: Cascade)
+
+  @@unique([offeringId, taskKey])
+  @@index([offeringId, status])
+  @@index([taskKey, status])
+}
