@@ -83,16 +83,6 @@ h1 { margin: 4px 0 0; font-size: 21px; letter-spacing: -.02em; }
 .kpi-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 23px; }
 .kpi-card, .panel, .control-panel { border: 1px solid var(--line); border-radius: 16px; background: var(--surface); box-shadow: var(--shadow); }
 .kpi-card { position: relative; overflow: hidden; min-height: 134px; padding: 19px 19px 16px; }
-.kpi-card-button { display: grid; width: 100%; border: 1px solid var(--line); text-align: left; transition: transform .15s, border-color .15s; }
-/* Hover-only, and transform/border alone — the card lifts under a real pointer
-but the effect never fires from a scroll on touch, and dropping the shadow
-from the transition keeps it on the compositor instead of repainting. */
-@media (hover: hover) and (pointer: fine) {
-  .kpi-card-button:hover { transform: translateY(-2px); border-color: #e7b1b7; box-shadow: 0 16px 34px rgba(30, 49, 80, .12); }
-}
-.kpi-card-button.is-active { border-color: #d95460; box-shadow: 0 0 0 3px rgba(217, 84, 96, .12), var(--shadow); }
-.priority-kpi { background: linear-gradient(180deg, #fff 0%, #fff8f9 100%); }
-.priority-kpi .kpi-value { color: #b93445; }
 .kpi-card::before { content: ""; position: absolute; inset: 0 auto 0 0; width: 4px; background: var(--blue); }
 .kpi-card.green::before { background: var(--green); }.kpi-card.purple::before { background: var(--purple); }.kpi-card.orange::before { background: var(--orange); }.kpi-card.red::before { background: var(--red); }
 .kpi-label { color: var(--muted); font-size: 14px; font-weight: 650; }
@@ -102,8 +92,6 @@ from the transition keeps it on the compositor instead of repainting. */
 .kpi-value { margin: 16px 0 6px; color: var(--ink); font-size: 27px; font-weight: 800; letter-spacing: -.04em; }
 .kpi-value.compact { font-size: 23px; }
 .kpi-note { color: var(--muted); font-size: 13px; line-height: 1.5; }
-.kpi-breakdown { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; color: #75545c; font-size: 12px; }
-.kpi-breakdown span { padding: 4px 6px; border-radius: 999px; background: rgba(255, 233, 237, .8); }
 .kpi-progress { display: block; height: 6px; margin: 11px 0 8px; overflow: hidden; border-radius: 999px; background: #edf0f5; }
 .kpi-progress-fill { display: block; height: 100%; min-width: 2px; border-radius: inherit; background: var(--blue); }
 .kpi-progress-fill.green { background: var(--green); }.kpi-progress-fill.purple { background: var(--purple); }
@@ -143,7 +131,7 @@ from the transition keeps it on the compositor instead of repainting. */
 .queue-filter-button:hover, .queue-filter-button.is-active { border-color: #adc2eb; color: #2f5cb8; background: #f4f7ff; }
 .queue-filter-button.is-active strong { color: #2f5cb8; }
 .follow-up-icon { display: grid; flex: 0 0 auto; place-items: center; width: 25px; height: 25px; border-radius: 8px; color: #b93445; background: #fff0f1; font-weight: 850; }
-.follow-up-icon.queue-waiting { color: #8f5410; background: #fff3e5; }.follow-up-icon.queue-progress { color: #3568c4; background: #edf3ff; }.follow-up-severity { font-size: 12px; font-weight: 850; letter-spacing: .03em; }.follow-up-severity.queue-blocked { color: #b93445; }.follow-up-severity.queue-waiting { color: #8f5410; }.follow-up-severity.queue-progress { color: #3568c4; }
+.follow-up-icon.queue-waiting { color: #8f5410; background: #fff3e5; }.follow-up-icon.queue-progress { color: #3568c4; background: #edf3ff; }
 .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 7px; border-top: 1px solid #edf0f4; }
 .pager-range { color: var(--muted); font-size: 13px; }
 .pager-controls { display: flex; align-items: center; gap: 10px; }
@@ -222,11 +210,14 @@ the thing overflowing. The last fields and the save button were unreachable. */
 .intro-badges { display: grid; justify-items: end; gap: 8px; }
 .scope-chip { display: inline-flex; align-items: center; gap: 5px; padding: 7px 10px; border: 1px solid #e4e9f3; border-radius: 999px; color: #53617a; background: #f9fbff; font-size: 12px; font-weight: 750; }
 .scope-chip-label { color: var(--muted); font-weight: 650; }
-.kpi-card-button:focus-visible, .course-link:focus-visible, .row-action:focus-visible, .icon-button:focus-visible, .text-button:focus-visible, .filter-summary button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
+.course-link:focus-visible, .row-action:focus-visible, .icon-button:focus-visible, .text-button:focus-visible, .filter-summary button:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 3px; }
 :where(button, a, input, select, textarea):focus-visible { outline: 3px solid var(--focus-ring); outline-offset: 2px; }
 .section-kicker { font-size: 13px; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; } }
-.toast { position: fixed; right: 18px; bottom: 18px; z-index: 40; display: flex; align-items: center; gap: 14px; max-width: min(420px, calc(100vw - 36px)); padding: 12px 14px; border-radius: 10px; color: #fff; background: #1d2c45; box-shadow: 0 14px 38px rgba(14, 27, 53, .28); font-size: 14px; line-height: 1.5; animation: toast-in .18s ease-out; }
+/* Clear of the floating "add a course" button, which sits in the same corner.
+   84px is that button plus a gap; on pages without it the toast simply sits a
+   little higher, which costs nothing. */
+.toast { position: fixed; right: 18px; bottom: 84px; z-index: 40; display: flex; align-items: center; gap: 14px; max-width: min(420px, calc(100vw - 36px)); padding: 12px 14px; border-radius: 10px; color: #fff; background: #1d2c45; box-shadow: 0 14px 38px rgba(14, 27, 53, .28); font-size: 14px; line-height: 1.5; animation: toast-in .18s ease-out; }
 .toast-message { min-width: 0; }
 .toast-undo { flex: 0 0 auto; min-height: 32px; padding: 5px 11px; border: 1px solid rgba(255,255,255,.28); border-radius: 7px; color: #fff; background: rgba(255,255,255,.08); font-size: 13px; font-weight: 800; }
 .toast-undo:hover { border-color: rgba(255,255,255,.55); background: rgba(255,255,255,.16); }
@@ -240,57 +231,51 @@ the thing overflowing. The last fields and the save button were unreachable. */
    squeezing ten columns into a laptop screen. */
 @media (max-width: 1100px) {
   .matrix-scroll { overflow-x: auto; }
-  .matrix { width: max-content; min-width: 100%; table-layout: auto; }
-  .matrix-room, .matrix-cell { min-width: 150px; }
-  .matrix-corner, .matrix-slot { width: 88px; min-width: 88px; }
+      .matrix { width: max-content; min-width: 100%; table-layout: auto; }
+      .matrix-room, .matrix-cell { min-width: 150px; }
+      .matrix-corner, .matrix-slot { width: 88px; min-width: 88px; }
 }
 
 @media (max-width: 760px) {
   :root { --page-max: 680px; --page-width: min(var(--page-max), 94%); --page-gutter: max(3%, calc((100% - var(--page-max)) / 2)); }
-    
-      /* Every control gets a 44px target. Applied only on small screens so the
-         desktop tables stay compact. */
-      .row-action, .queue-filter-button, .text-button, .filter-summary button, .selection-chip, .secondary-button, .primary-button, .icon-button, .app-nav a, .course-link { min-height: var(--tap-min); }
-      .course-link { padding-block: 4px; }
-      .row-action, .queue-filter-button, .filter-summary button { padding-block: 9px; }
-      .text-button { display: inline-flex; align-items: center; }
-    
-      .topbar, .intro-row { display: flex; align-items: flex-start; flex-direction: column; }
-      /* Source badge and timestamp share one line so the header stops eating half
-         the first screen before any content appears. */
-      .topbar { gap: 14px; padding-block: 16px; }
-      .header-meta { width: 100%; align-items: center; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 10px; }
-      .brand-mark { width: 36px; height: 36px; border-radius: 11px; font-size: 19px; }
-      .page-content { padding-top: 28px; }
-      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-      .kpi-card { min-height: 118px; padding: 16px 15px 14px; }
-      /* Two cards sit side by side here and a Thai label rarely fits one line at
-         this width. Reserving both lines keeps the numbers on a shared baseline
-         instead of dropping one card's value 20px below its neighbour's. */
-      .kpi-card:not(.priority-kpi) .kpi-topline { align-items: flex-start; min-height: 41px; }
-      .kpi-card.priority-kpi { grid-column: 1 / -1; }
-      .kpi-card:last-child { grid-column: auto; }
-      .kpi-value { margin-top: 14px; font-size: 24px; }
-      .kpi-value.compact { font-size: 20px; }
-      .kpi-breakdown { margin-top: 8px; }
-      .filters { grid-template-columns: 1fr; }
-      .readiness-heading-meta { align-items: flex-end; flex-direction: column; gap: 5px; }.selection-chip-list { justify-content: flex-end; }
-      .dialog-header { padding: 20px 18px 16px; }
-      .dialog-content { padding: 18px; }
-      .table-heading-actions { align-items: flex-end; flex-direction: column; gap: 6px; }
-    /* This used to be `display: none`, paired with a card list that rendered the
-       same rows in a phone-shaped layout. The card list went with the v1
-       dashboards and the rule stayed, so the course table was simply absent on a
-       phone — 18 courses, filters, a pager, and nothing between them. The table
-       scrolls sideways inside its own box instead; the page does not. */
-    .table-wrap { display: block; margin-inline: 0; }
-    .table-panel table { min-width: 620px; }
+        
+          /* Every control gets a 44px target. Applied only on small screens so the
+             desktop tables stay compact. */
+          .row-action, .queue-filter-button, .text-button, .filter-summary button, .selection-chip, .secondary-button, .primary-button, .icon-button, .app-nav a, .course-link { min-height: var(--tap-min); }
+          .course-link { padding-block: 4px; }
+          .row-action, .queue-filter-button, .filter-summary button { padding-block: 9px; }
+          .text-button { display: inline-flex; align-items: center; }
+        
+          .topbar, .intro-row { display: flex; align-items: flex-start; flex-direction: column; }
+          /* Source badge and timestamp share one line so the header stops eating half
+             the first screen before any content appears. */
+          .topbar { gap: 14px; padding-block: 16px; }
+          .header-meta { width: 100%; align-items: center; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 10px; }
+          .brand-mark { width: 36px; height: 36px; border-radius: 11px; font-size: 19px; }
+          .page-content { padding-top: 28px; }
+          .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+          .kpi-card { min-height: 118px; padding: 16px 15px 14px; }
+          .kpi-card:last-child { grid-column: auto; }
+          .kpi-value { margin-top: 14px; font-size: 24px; }
+          .kpi-value.compact { font-size: 20px; }
+          .filters { grid-template-columns: 1fr; }
+          .readiness-heading-meta { align-items: flex-end; flex-direction: column; gap: 5px; }.selection-chip-list { justify-content: flex-end; }
+          .dialog-header { padding: 20px 18px 16px; }
+          .dialog-content { padding: 18px; }
+          .table-heading-actions { align-items: flex-end; flex-direction: column; gap: 6px; }
+        /* This used to be `display: none`, paired with a card list that rendered the
+           same rows in a phone-shaped layout. The card list went with the v1
+           dashboards and the rule stayed, so the course table was simply absent on a
+           phone — 18 courses, filters, a pager, and nothing between them. The table
+           scrolls sideways inside its own box instead; the page does not. */
+        .table-wrap { display: block; margin-inline: 0; }
+        .table-panel table { min-width: 620px; }
 }
 
 @media (max-width: 480px) {
   .kpi-grid { grid-template-columns: 1fr 1fr; }
-      .kpi-label { font-size: 13px; }
-      .panel, .control-panel { padding-left: 16px; padding-right: 16px; }
+          .kpi-label { font-size: 13px; }
+          .panel, .control-panel { padding-left: 16px; padding-right: 16px; }
 }
 
 /* MOU dashboard */
@@ -299,8 +284,8 @@ the thing overflowing. The last fields and the save button were unreachable. */
 .app-nav a:hover, .app-nav a.is-active { color: #203252; background: #e5efff; }
 @media (max-width: 760px) {
   .topbar { flex-wrap: wrap; }
-      .app-nav { order: 3; width: 100%; }
-      .app-nav a { flex: 1; text-align: center; }
+          .app-nav { order: 3; width: 100%; }
+          .app-nav a { flex: 1; text-align: center; }
 }
 
 .secondary-button, .primary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; }
@@ -367,14 +352,21 @@ act on it — a list of problems with no handles is the failure mode this
 panel exists to avoid. */
 .conflict-list { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
 .conflict-row { display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; align-items: start; gap: 11px; padding: 12px; border: 1px solid #edf0f5; border-radius: 12px; background: #fcfcfe; }
+.conflict-row:has(> .conflict-copy:last-child) { grid-template-columns: 25px minmax(0, 1fr); }
 .conflict-copy { display: grid; min-width: 0; gap: 5px; }
+.conflict-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
 .conflict-copy strong { color: #283349; font-size: 14px; line-height: 1.4; }
+/* Same three colours as the icon on the left, as a badge rather than a word:
+   beside a heading it needs an edge of its own to read as a label. */
+.conflict-badge { flex: 0 0 auto; padding: 2px 8px; border-radius: 999px; color: #b93445; background: #fff0f1; font-size: 11px; font-weight: 850; letter-spacing: .02em; white-space: nowrap; }
+.conflict-badge.queue-waiting { color: #8f5410; background: #fff3e5; }
+.conflict-badge.queue-progress { color: #3568c4; background: #edf3ff; }
 .conflict-copy small { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .conflict-slot-list { display: grid; gap: 4px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted-2); font-size: 12px; line-height: 1.5; }
 .conflict-slot-name { margin-right: 7px; color: #4a5766; font-weight: 800; }
 .conflict-side { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
 
-.room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 13px; }
+.room-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .room-card { display: grid; align-content: start; gap: 7px; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: #fff; text-decoration: none; color: inherit; transition: transform .15s, border-color .15s; }
 @media (hover: hover) and (pointer: fine) {
   .room-card:hover { transform: translateY(-2px); border-color: #9bb7ed; }
@@ -418,37 +410,36 @@ out — but it should never happen without the reader seeing it. */
 
 @media (max-width: 1050px) {
   /* Between the phone layout and a full desktop the header meta had nowhere to
-       go: nav, edit note, source badge and timestamp on one line ran past the
-       right edge and scrolled the whole page sideways. Let it wrap here — the
-       nowrap above is only worth having while there is room for it. */
-    .header-meta { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
-    .local-edit-note { white-space: normal; }
-    .week-grid-row { grid-template-columns: 62px repeat(6, minmax(0, 1fr)); gap: 6px; }
-      .week-day-full { display: none; }
-      .week-day-short { display: inline; }
-      .availability-row { grid-template-columns: 74px repeat(6, minmax(0, 1fr)); }
+           go: nav, edit note, source badge and timestamp on one line ran past the
+           right edge and scrolled the whole page sideways. Let it wrap here — the
+           nowrap above is only worth having while there is room for it. */
+        .header-meta { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+        .local-edit-note { white-space: normal; }
+        .week-grid-row { grid-template-columns: 62px repeat(6, minmax(0, 1fr)); gap: 6px; }
+          .week-day-full { display: none; }
+          .week-day-short { display: inline; }
+          .availability-row { grid-template-columns: 74px repeat(6, minmax(0, 1fr)); }
 }
 
 @media (max-width: 760px) {
   /* Six columns on a phone either scroll sideways — taking the day heading off
-         screen with them — or squeeze each column below the width of a Thai course
-         title. The day list keeps both. */
-      .week-grid { display: none; }
-      .week-day-list { display: grid; gap: 12px; }
-      .week-day-card { display: grid; gap: 10px; padding: 14px; border: 1px solid #e9edf3; border-radius: 13px; background: #fcfdff; }
-      .week-day-card h4 { margin: 0; color: #26324a; font-size: 15px; }
-      .week-day-period { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: start; gap: 10px; }
-      .week-day-slot { min-width: 0; }
-      .conflict-row { grid-template-columns: 25px minmax(0, 1fr); }
-      .conflict-row .follow-up-severity { grid-column: 2; }
-      .room-grid { grid-template-columns: 1fr; }
-      .assign-option { grid-template-columns: 1fr; }
-      .assign-option-warnings { justify-content: flex-start; max-width: none; }
-      .availability-row { grid-template-columns: 64px repeat(6, minmax(0, 1fr)); gap: 4px; }
-      .availability-period small { display: none; }
-      .availability-slot { min-height: var(--tap-min); }
-      .slot-add { min-height: var(--tap-min); }
-      .chip-action { width: 34px; height: 34px; }
+             screen with them — or squeeze each column below the width of a Thai course
+             title. The day list keeps both. */
+          .week-grid { display: none; }
+          .week-day-list { display: grid; gap: 12px; }
+          .week-day-card { display: grid; gap: 10px; padding: 14px; border: 1px solid #e9edf3; border-radius: 13px; background: #fcfdff; }
+          .week-day-card h4 { margin: 0; color: #26324a; font-size: 15px; }
+          .week-day-period { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: start; gap: 10px; }
+          .week-day-slot { min-width: 0; }
+          .conflict-row { grid-template-columns: 25px minmax(0, 1fr); }
+          .room-grid { grid-template-columns: 1fr; }
+          .assign-option { grid-template-columns: 1fr; }
+          .assign-option-warnings { justify-content: flex-start; max-width: none; }
+          .availability-row { grid-template-columns: 64px repeat(6, minmax(0, 1fr)); gap: 4px; }
+          .availability-period small { display: none; }
+          .availability-slot { min-height: var(--tap-min); }
+          .slot-add { min-height: var(--tap-min); }
+          .chip-action { width: 34px; height: 34px; }
 }
 
 /* The board — a column per room, a row per period */
@@ -476,14 +467,18 @@ out — but it should never happen without the reader seeing it. */
 .picker-bar-hint { flex: 1 1 auto; color: var(--muted); font-size: 12px; }
 .picker-bar-close { min-height: 32px; padding: 0 14px; border: 1px solid #dce2ec; border-radius: 999px; color: #49628e; background: #fff; font-size: 13px; font-weight: 750; }
 .picker-bar-close:hover { border-color: #9bb7ed; color: var(--blue); }
-.picker-list { display: flex; overflow-x: auto; flex-wrap: nowrap; gap: 8px; margin: 0; padding: 0 0 4px; list-style: none; }
+/* The bar scrolls but shows no bar of its own: it sits over the page, and a
+   scrollbar there reads as a second page rather than a shelf of cards. */
+.picker-list { display: flex; overflow-x: auto; flex-wrap: nowrap; gap: 8px; margin: 0; padding: 0; list-style: none; scrollbar-width: none; -ms-overflow-style: none; }
+.picker-list::-webkit-scrollbar { display: none; }
 .picker-list > li { flex: 0 0 auto; }
-.tray-chip { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; max-width: 340px; padding: 8px 9px; border: 1px solid #e0d5b8; border-radius: 10px; background: #fffdf6; cursor: grab; }
+.tray-chip { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; width: 232px; padding: 8px 9px; border: 1px solid #e0d5b8; border-radius: 10px; background: #fffdf6; cursor: grab; }
 .tray-chip.is-held { border-color: #3b70dc; background: #edf3ff; }
 .tray-chip-copy { display: grid; min-width: 0; gap: 2px; }
-.tray-chip-copy strong { color: #26324a; font-size: 13px; }
-.tray-chip-copy small { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.matrix-holding { margin: 0; }
+.tray-chip-copy strong { display: -webkit-box; overflow: hidden; color: #26324a; font-size: 13px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.tray-chip-copy small { display: block; color: var(--muted); font-size: 12px; line-height: 1.4; }
+.tray-chip-slots { color: #6b5a2a; font-weight: 750; white-space: nowrap; }
+.matrix-holding { margin: 7px 0 0; padding: 5px 10px; border-radius: 8px; color: #2f5cb8; background: #edf3ff; font-size: 13px; }
 
 /* `position: relative` is load-bearing, not decoration.
    Every button on the board carries a .sr-only label, and .sr-only is
@@ -502,17 +497,16 @@ out — but it should never happen without the reader seeing it. */
    were cut off mid-word instead of wrapping onto a second line. */
 .matrix th { letter-spacing: 0; text-transform: none; white-space: normal; }
 .matrix th, .matrix td { border-bottom: 1px solid #edf0f5; border-right: 1px solid #edf0f5; }
-.matrix-corner { position: sticky; top: 0; left: 0; z-index: 4; width: 92px; padding: 9px 10px; color: var(--muted); background: #f4f6fa; font-size: 12px; text-align: left; }
-.matrix-room { position: sticky; top: 0; z-index: 3; padding: 9px 10px; color: #3d4b65; background: #f4f6fa; font-size: 12px; font-weight: 800; line-height: 1.4; text-align: left; vertical-align: top; }
-/* Colour is never the only cue: the room's name is beside every swatch, here
-   and on each card. That is what lets the palette stay at four hues. */
-.room-swatch { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 999px; vertical-align: baseline; }
+.matrix-corner { position: sticky; top: 0; left: 0; z-index: 4; width: 108px; padding: 8px 10px; color: var(--muted); background: #f4f6fa; font-size: 11px; text-align: left; }
+.matrix-room { position: sticky; top: 0; z-index: 3; padding: 8px 9px; color: #3d4b65; background: #f4f6fa; font-size: 11px; font-weight: 800; line-height: 1.4; text-align: left; vertical-align: top; }
+.matrix-room span { display: block; }
+.matrix-room small { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
 .matrix-day th { position: sticky; left: 0; z-index: 2; padding: 6px 11px; color: #2b3750; background: #eef1f7; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-align: left; }
-.matrix-slot { position: sticky; left: 0; z-index: 2; display: table-cell; width: 92px; padding: 8px 10px; background: #fbfcfe; text-align: left; vertical-align: top; }
+.matrix-slot { position: sticky; left: 0; z-index: 2; display: table-cell; width: 108px; padding: 8px 10px; background: #fbfcfe; text-align: left; vertical-align: top; }
 .matrix-slot strong { display: block; color: #3d4b65; font-size: 13px; }
-/* Start and end on their own lines. "13:00–16:00" does not break anywhere, so
-   in a 92px column it either overflowed or forced the column wider. */
-.matrix-slot small { display: block; color: var(--muted-2); font-size: 11px; line-height: 1.45; }
+/* Wide enough, and small enough, for "09:00–12:00" to hold one line — it has no
+   break opportunity of its own, so the column has to make room for all of it. */
+.matrix-slot small { display: block; color: var(--muted-2); font-size: 11px; line-height: 1.45; white-space: nowrap; }
 .matrix-cell { padding: 6px; vertical-align: top; background: #fff; }
 .matrix-cell.is-blocked { background: repeating-linear-gradient(135deg, #f4f6fa, #f4f6fa 6px, #eef1f6 6px, #eef1f6 12px); }
 /* Live answer to "can this go here", given while the cursor is still moving —
@@ -520,7 +514,12 @@ out — but it should never happen without the reader seeing it. */
 .matrix-cell.is-drop-ok { outline: 2px solid #3aa06f; outline-offset: -2px; background: #f2fbf7; }
 .matrix-cell.is-drop-blocked { outline: 2px solid #d98324; outline-offset: -2px; background: #fff8ef; }
 .matrix-blocked { display: block; padding: 4px 2px; color: #6d778c; font-size: 12px; }
-.matrix-chip { display: grid; gap: 4px; padding: 7px 8px; border: 1px solid #dfe6f2; border-radius: 9px; background: #fff; cursor: grab; }
+.matrix-chip { position: relative; display: grid; gap: 4px; padding: 7px 8px; border: 1px solid #dfe6f2; border-radius: 9px; background: #fff; cursor: grab; }
+/* Top-right, away from the lock and move buttons: removing a class is the one
+   action here you cannot undo by pressing it again. */
+.chip-remove { position: absolute; top: 3px; right: 3px; display: grid; place-items: center; width: 20px; height: 20px; border: 0; border-radius: 6px; color: #97a1b4; background: transparent; font-size: 14px; line-height: 1; }
+.chip-remove:hover { color: #a3313c; background: #fdeef0; }
+.matrix-chip-copy { padding-right: 20px; }
 .matrix-chip + .matrix-chip { margin-top: 6px; }
 .matrix-chip.is-locked { border-color: #a8ddc6; background: #f4fcf8; cursor: default; }
 .matrix-chip.is-conflict { border-color: #e7b1b7; background: #fff6f7; }
@@ -539,8 +538,10 @@ out — but it should never happen without the reader seeing it. */
 
 /* One tag shape wherever a room is named outside the board itself. */
 .room-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border: 1px solid #e6eaf1; border-radius: 999px; color: #3d4b65; background: #f7f9fc; font-size: 12px; font-weight: 750; }
-.room-tag { border-color: color-mix(in srgb, var(--room-accent) 32%, #ffffff); background: color-mix(in srgb, var(--room-accent) 9%, #ffffff); }
-.room-tag::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--room-accent); }
+/* Day colour, on the other hand, is the traditional one — see lib/day-colors.ts
+   for why each is restated as ink + wash rather than used raw. */
+.day-chip-list { display: flex; flex-wrap: wrap; gap: 4px; }
+.day-chip { display: inline-flex; align-items: center; padding: 3px 8px; border: 1px solid var(--day-border); border-radius: 7px; color: var(--day-ink); background: var(--day-bg); font-size: 12px; font-weight: 800; white-space: nowrap; }
 .provider-link { color: var(--blue); font-weight: 700; text-decoration: none; }
 .provider-link:hover { text-decoration: underline; }
 
@@ -549,10 +550,15 @@ out — but it should never happen without the reader seeing it. */
 .availability-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 10px; margin: 0; color: var(--muted); font-size: 12px; }
 .availability-legend .availability-slot { width: 26px; min-height: 26px; pointer-events: none; }
 
+@media (max-width: 1050px) {
+  .room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
 @media (max-width: 760px) {
-  .filters.filters-list { grid-template-columns: 1fr; }
-  .picker-bar { padding: 11px 16px 13px; }
-  .picker-fab { right: 14px; bottom: 14px; }
-  .tray-chip { max-width: none; }
-  .conflict-side { justify-content: flex-start; }
+  .room-grid { grid-template-columns: 1fr; }
+      .filters.filters-list { grid-template-columns: 1fr; }
+      .picker-bar { padding: 11px 16px 13px; }
+      .picker-fab { right: 14px; bottom: 14px; }
+      .tray-chip { max-width: none; }
+      .conflict-side { justify-content: flex-start; }
 }

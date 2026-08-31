@@ -1,11 +1,13 @@
 "use client";
 
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 import { formatNumber } from "@/lib/format";
-import { accentFor, buildRoomAccents, ONLINE_ACCENT, ONLINE_COLUMN } from "@/lib/room-colors.ts";
 import { placementBlockers } from "@/lib/scheduler.ts";
 import { DAYS, DAY_LABELS, PERIODS, PERIOD_KEYS, makeSlotId, slotLabel, type SlotId } from "@/lib/slots.ts";
 import type { Assignment, BlockerCode, PlanCourse, PlanRoom } from "@/lib/plan-types.ts";
+
+/** The column for classes that occupy no room at all. */
+const ONLINE_COLUMN = "__online__";
 import type { Conflict } from "@/lib/conflicts.ts";
 
 type Held = { kind: "assignment"; id: string; courseId: string } | { kind: "course"; id: string };
@@ -35,6 +37,7 @@ export function PlanMatrix({
   onToggleLock,
   onRemove,
   onBlockedDrop,
+  onHeldChange,
 }: {
   rooms: PlanRoom[];
   courses: PlanCourse[];
@@ -47,25 +50,44 @@ export function PlanMatrix({
   onRemove: (assignmentId: string) => void;
   /** Called when a drop lands somewhere the rules object to, so the page can say so. */
   onBlockedDrop: (courseTitle: string, slotId: SlotId, blockers: BlockerCode[]) => void;
+  /** Lets the page put the "you are placing X" note in its heading. Shown
+   *  inside the board it appeared and disappeared above the table, moving
+   *  every row down and then back the moment a drag started. */
+  onHeldChange?: (course: PlanCourse | null) => void;
 }) {
   const [held, setHeld] = useState<Held | null>(null);
   const [hover, setHover] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  const accents = useMemo(() => buildRoomAccents(rooms), [rooms]);
   const coursesById = useMemo(() => new Map(courses.map((course) => [course.id, course])), [courses]);
 
+  /* Building on the first line, the rest of the name on the second. One line of
+     "จุฬาพัฒน์ 4 โถงกลาง ชั้น 3" in a 130px column wrapped wherever it landed. */
   const columns = useMemo(
     () => [
-      ...rooms.map((room) => ({ key: room.id, room, label: room.name, accent: accentFor(accents, room.id) })),
-      { key: ONLINE_COLUMN, room: null, label: "ออนไลน์", accent: ONLINE_ACCENT },
+      ...rooms.map((room) => {
+        // "ตึก 4 (คณะวิศวะ)" and "ตึก 4 ชั้น 17 ห้อง 17-02" share only the part
+        // before the parenthesis, so strip on that rather than the whole label.
+        const prefix = room.building.split(" (")[0];
+        return {
+          key: room.id,
+          room,
+          label: room.building,
+          detail: room.name.startsWith(prefix) ? room.name.slice(prefix.length).trim() : room.name,
+        };
+      }),
+      { key: ONLINE_COLUMN, room: null, label: "ออนไลน์", detail: "" },
     ],
-    [rooms, accents],
+    [rooms],
   );
 
   const heldCourse = held
     ? coursesById.get(held.kind === "assignment" ? held.courseId : held.id) ?? null
     : null;
+
+  useEffect(() => {
+    onHeldChange?.(heldCourse);
+  }, [heldCourse, onHeldChange]);
 
   const roomIdFor = (course: PlanCourse, columnKey: string) =>
     course.deliveryMode === "ONLINE" || columnKey === ONLINE_COLUMN ? null : columnKey;
@@ -109,8 +131,9 @@ export function PlanMatrix({
     return blockersAt(heldCourse, slotId, columnKey, ignore).length === 0 ? " is-drop-ok" : " is-drop-blocked";
   };
 
-  const hasBlockingConflict = (assignmentId: string) =>
-    conflicts.some((item) => item.severity === "BLOCKED" && item.assignmentIds.includes(assignmentId));
+  const blockingFor = (assignmentId: string) =>
+    conflicts.filter((item) => item.severity === "BLOCKED" && item.assignmentIds.includes(assignmentId));
+  const hasBlockingConflict = (assignmentId: string) => blockingFor(assignmentId).length > 0;
 
   return (
     <div className="matrix-block">
@@ -164,8 +187,10 @@ export function PlanMatrix({
                     >
                       <span className="tray-chip-copy">
                         <strong>{course.title}</strong>
-                        <small>
-                          {course.provider} · ต้องได้ {formatNumber(missing)} คาบ ·{" "}
+                        <small>{course.provider} · ต้องได้ {formatNumber(missing)} คาบ</small>
+                        {/* Its own line: run on from the company name, a period
+                            like "อังคารบ่าย" broke across two lines mid-word. */}
+                        <small className="tray-chip-slots">
                           {course.availability.map(slotLabel).join(" / ") || "ยังไม่แจ้งช่วงที่สะดวก"}
                         </small>
                       </span>
@@ -189,13 +214,6 @@ export function PlanMatrix({
         </div>
       ) : null}
 
-      {heldCourse ? (
-        <p className="edit-mode-note matrix-holding">
-          กำลังวาง <strong>{heldCourse.title}</strong> — เลือกช่องปลายทาง ช่องขอบเขียวคือวางได้ ขอบส้มคือวางได้แต่จะมีปัญหา
-          <button className="text-button" type="button" onClick={() => setHeld(null)}>ยกเลิก</button>
-        </p>
-      ) : null}
-
       <div className="matrix-scroll">
         <table className="matrix">
           <caption className="sr-only">ตารางห้องเรียนทั้งสัปดาห์ คอลัมน์เป็นห้อง แถวเป็นคาบของแต่ละวัน</caption>
@@ -204,8 +222,8 @@ export function PlanMatrix({
               <th className="matrix-corner" scope="col">คาบ</th>
               {columns.map((column) => (
                 <th className="matrix-room" key={column.key} scope="col">
-                  <span className="room-swatch" style={{ background: column.accent }} aria-hidden="true" />
-                  {column.label}
+                  <span>{column.label}</span>
+                  {column.detail ? <small>{column.detail}</small> : null}
                 </th>
               ))}
             </tr>
@@ -222,8 +240,7 @@ export function PlanMatrix({
                     <tr key={slotId}>
                       <th className="matrix-slot" scope="row">
                         <strong>{PERIODS[period].label}</strong>
-                        <small>{PERIODS[period].start}</small>
-                        <small>–{PERIODS[period].end}</small>
+                        <small>{PERIODS[period].start}–{PERIODS[period].end}</small>
                       </th>
                       {columns.map((column) => {
                         const cellKey = `${slotId}:${column.key}`;
@@ -271,6 +288,15 @@ export function PlanMatrix({
                                   }}
                                   onDragEnd={() => { setHeld(null); setHover(null); }}
                                 >
+                                  <button
+                                    className="chip-remove"
+                                    type="button"
+                                    title="เอาออกจากตาราง"
+                                    onClick={() => onRemove(assignment.id)}
+                                  >
+                                    <span aria-hidden="true">×</span>
+                                    <span className="sr-only">เอา {course.title} ออกจากตาราง</span>
+                                  </button>
                                   <span className="matrix-chip-copy">
                                     <strong>{course.title}</strong>
                                     <small>{course.provider}</small>
@@ -302,19 +328,20 @@ export function PlanMatrix({
                                         <span className="sr-only">ย้าย {course.title} ไปช่องอื่น</span>
                                       </button>
                                     )}
-                                    <button
-                                      className="chip-action"
-                                      type="button"
-                                      title="เอาออกจากตาราง"
-                                      onClick={() => onRemove(assignment.id)}
-                                    >
-                                      <span aria-hidden="true">×</span>
-                                      <span className="sr-only">เอา {course.title} ออกจากตาราง</span>
-                                    </button>
                                   </span>
                                 </div>
                               );
                             })}
+                            {/* Same as the per-room grid: a red border says
+                                something is wrong, and this says what — without
+                                it the reader has to match the cell against a
+                                list somewhere else on the page. */}
+                            {(() => {
+                              const problems = [...new Set(here.flatMap((item) => blockingFor(item.id).map((c) => c.title)))];
+                              return problems.length > 0 ? (
+                                <p className="slot-conflict-note">{problems.join(" · ")}</p>
+                              ) : null;
+                            })()}
                             {heldCourse && !blocked ? (
                               <button
                                 className={`matrix-drop${cellState(slotId, column.key)}`}

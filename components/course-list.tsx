@@ -9,15 +9,15 @@ import { PlanShell } from "@/components/plan-shell";
 import { ResultAnnouncer } from "@/components/result-announcer";
 import { SlotFilters, matchesSlotFilter } from "@/components/slot-filters";
 import { formatNumber } from "@/lib/format";
-import { accentFor, buildRoomAccents } from "@/lib/room-colors.ts";
-import { DAY_LABELS, PERIODS, slotLabel, type DayKey, type PeriodKey } from "@/lib/slots.ts";
+import { DAY_COLORS } from "@/lib/day-colors.ts";
+import { DAY_LABELS, PERIODS, parseSlotId, slotLabel, type DayKey, type PeriodKey, type SlotId } from "@/lib/slots.ts";
 import type { PlanPayload } from "@/lib/plan-types.ts";
 import { usePlanState } from "@/lib/use-plan-state";
 import { useUrlFilters } from "@/lib/use-url-filters";
 
 type PlacementFilter = "all" | "placed" | "unplaced";
 
-const PAGE_SIZE = 15;
+const PAGE_SIZE = 10;
 
 /**
  * Every course as a row: what the company offered, and what it got.
@@ -44,7 +44,6 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
     if (found.placement === "placed" || found.placement === "unplaced") setPlacement(found.placement);
   });
 
-  const accents = useMemo(() => buildRoomAccents(plan.rooms), [plan.rooms]);
   const roomsById = useMemo(() => new Map(plan.rooms.map((room) => [room.id, room])), [plan.rooms]);
 
   const rows = useMemo(() => {
@@ -188,9 +187,28 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
                       </td>
                       <td><span className="schedule-text">{course.instructor}</span></td>
                       <td>
-                        <span className="schedule-text">
-                          {course.availability.map(slotLabel).join(" · ") || "ยังไม่ได้แจ้ง"}
-                        </span>
+                        {course.availability.length === 0 ? (
+                          <span className="status-pill tone-orange">ยังไม่ได้แจ้ง</span>
+                        ) : (
+                          <span className="day-chip-list">
+                            {course.availability.map((slotId: SlotId) => {
+                              const colour = DAY_COLORS[parseSlotId(slotId).day];
+                              return (
+                                <span
+                                  className="day-chip"
+                                  key={slotId}
+                                  style={{
+                                    ["--day-ink" as string]: colour.ink,
+                                    ["--day-bg" as string]: colour.bg,
+                                    ["--day-border" as string]: colour.border,
+                                  }}
+                                >
+                                  {slotLabel(slotId)}
+                                </span>
+                              );
+                            })}
+                          </span>
+                        )}
                       </td>
                       <td>
                         {placed.length === 0 ? (
@@ -210,19 +228,13 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
                       </td>
                       <td>
                         {course.deliveryMode === "ONLINE" ? (
-                          <span className="room-tag" style={{ ["--room-accent" as string]: accentFor(accents, null) }}>
-                            ออนไลน์
-                          </span>
+                          <span className="room-tag">ออนไลน์</span>
                         ) : placed.length === 0 ? (
                           <span className="schedule-text">—</span>
                         ) : (
                           <span className="status-stack">
                             {placed.map((item) => (
-                              <span
-                                className="room-tag"
-                                key={item.id}
-                                style={{ ["--room-accent" as string]: accentFor(accents, item.roomId) }}
-                              >
+                              <span className="room-tag" key={item.id}>
                                 {item.roomId ? roomsById.get(item.roomId)?.name ?? item.roomId : "ออนไลน์"}
                               </span>
                             ))}

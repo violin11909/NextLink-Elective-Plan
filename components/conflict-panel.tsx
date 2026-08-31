@@ -1,6 +1,6 @@
 "use client";
 
-import { QUEUE_META, type QueueKind } from "@/lib/queue";
+import { QUEUE_META } from "@/lib/queue";
 import { slotLabel } from "@/lib/slots.ts";
 import type { Conflict } from "@/lib/conflicts.ts";
 import type { PlanGap } from "@/lib/use-plan-state";
@@ -18,24 +18,23 @@ import type { Suggestion } from "@/lib/plan-types.ts";
 export function ConflictPanel({
   conflicts,
   gaps,
-  filter,
   onSuggestion,
 }: {
+  /** Already narrowed to the page being shown — this only renders. */
   conflicts: Conflict[];
   gaps: PlanGap[];
-  filter: QueueKind | "all";
   onSuggestion?: (suggestion: Suggestion) => void;
 }) {
-  const shown = filter === "all" ? conflicts : conflicts.filter((item) => item.severity === filter);
+  const shown = conflicts;
   const gapById = new Map(gaps.map((gap) => [gap.course.id, gap]));
 
   if (shown.length === 0) {
-    return <p className="panel-caption">ไม่มีรายการค้างในกลุ่มนี้</p>;
+    return <p className="panel-caption">ไม่มีรายการค้าง</p>;
   }
 
   return (
     <ul className="conflict-list">
-      {shown.slice(0, 40).map((conflict) => {
+      {shown.map((conflict) => {
         const gap = conflict.code === "UNDER_SCHEDULED" ? gapById.get(conflict.courseIds[0]) : null;
         return (
           <li className="conflict-row" key={conflict.id}>
@@ -43,7 +42,16 @@ export function ConflictPanel({
               {QUEUE_META[conflict.severity].icon}
             </span>
             <div className="conflict-copy">
-              <strong>{conflict.title}</strong>
+              {/* The urgency sits with the heading it describes. Alone in the
+                  right column it was the width of a word floating a long way
+                  from the row it belonged to, and on a short row the space
+                  between them was the widest thing in the panel. */}
+              <span className="conflict-title">
+                <strong>{conflict.title}</strong>
+                <span className={`conflict-badge ${QUEUE_META[conflict.severity].className}`}>
+                  {QUEUE_META[conflict.severity].label}
+                </span>
+              </span>
               <small>{conflict.detail}</small>
               {gap ? (
                 <ul className="conflict-slot-list">
@@ -59,23 +67,20 @@ export function ConflictPanel({
             {/* Actions and the urgency label share the right column, level with
                 the heading. Underneath the text the buttons pushed every row
                 taller while the right third of a one-line row sat empty. */}
-            <div className="conflict-side">
-              {gap && onSuggestion
-                ? gap.reason.suggestions.map((suggestion) => (
-                    <button
-                      className="selection-chip"
-                      key={suggestion.label}
-                      type="button"
-                      onClick={() => onSuggestion(suggestion)}
-                    >
-                      {suggestion.label}
-                    </button>
-                  ))
-                : null}
-              <span className={`follow-up-severity ${QUEUE_META[conflict.severity].className}`}>
-                {QUEUE_META[conflict.severity].label}
-              </span>
-            </div>
+            {gap && onSuggestion && gap.reason.suggestions.length > 0 ? (
+              <div className="conflict-side">
+                {gap.reason.suggestions.map((suggestion) => (
+                  <button
+                    className="selection-chip"
+                    key={suggestion.label}
+                    type="button"
+                    onClick={() => onSuggestion(suggestion)}
+                  >
+                    {suggestion.label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </li>
         );
       })}
