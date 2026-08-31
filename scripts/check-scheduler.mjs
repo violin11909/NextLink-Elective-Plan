@@ -216,22 +216,62 @@ check("when จุฬาพัฒน์ is full the Faculty rooms open and are f
   return conflicts.some((c) => c.code === "NEEDS_ROOM_APPROVAL") ? null : "no approval reminder was raised";
 });
 
-// 11 — the shipped demo data must actually work, or the first screen is a wall of red.
-check("the bundled seed data plans with nothing left unassigned", () => {
+/*
+ * 11 — the shipped demo data.
+ *
+ * One course in it (21105814) is deliberately unschedulable: its company offers
+ * a single period and staffs it with the lecturer already teaching the other
+ * course in that period, so the planner has to refuse it and say why. That is
+ * the state the failure screen exists for, and it has to survive edits to the
+ * seed. Everything else must still place cleanly.
+ */
+const UNPLACEABLE = "plan-21105814";
+
+check("the bundled seed data plans, leaving only the deliberate failure case", () => {
   const rooms = JSON.parse(readFileSync("data/plan-rooms.json", "utf8")).rooms;
   const courses = JSON.parse(readFileSync("data/plan-courses.json", "utf8")).courses;
   const result = planSchedule({ courses, rooms });
-  if (result.unassigned.length) {
-    return result.unassigned
-      .map((u) => `${u.courseId}: ${u.reason.perSlot.map((s) => `${s.slotId} ${s.blockers.join("/")}`).join("; ")}`)
-      .join("\n      ");
+
+  const ids = result.unassigned.map((u) => u.courseId);
+  if (ids.length !== 1 || ids[0] !== UNPLACEABLE) {
+    return `expected only ${UNPLACEABLE} unassigned, got [${ids.join(", ")}]`;
+  }
+  const reason = result.unassigned[0].reason;
+  if (!reason.perSlot.some((s) => s.blockers.includes("INSTRUCTOR_BUSY"))) {
+    return `the failure should name the busy lecturer, got ${JSON.stringify(reason.perSlot)}`;
   }
   const blocking = detectConflicts({ courses, rooms, assignments: result.assignments }).filter(
     (c) => c.severity === "BLOCKED",
   );
   if (blocking.length) return blocking.map((c) => `${c.code} — ${c.title}`).join("\n      ");
+
   const total = courses.reduce((sum, c) => sum + c.sessionsPerWeek, 0);
-  if (result.assignments.length !== total) return `placed ${result.assignments.length} of ${total} sessions`;
+  const expected = total - courses.find((c) => c.id === UNPLACEABLE).sessionsPerWeek;
+  if (result.assignments.length !== expected) return `placed ${result.assignments.length} of ${expected} sessions`;
+  return null;
+});
+
+/*
+ * 13 — the bug the seed above found.
+ *
+ * planSchedule runs twice, and the second run used to receive only the courses
+ * that failed the first. The rules look courses up by id, so a locked
+ * assignment belonging to a course outside that list resolved to nothing, and
+ * the instructor and provider checks skipped it — putting one lecturer in two
+ * rooms at the same hour. The room check missed it because the two rooms
+ * differed.
+ */
+check("a lecturer already placed in pass 1 still blocks pass 2", () => {
+  const rooms = [room("cp-1", 50), room("eng-1", 50, "NEEDS_APPROVAL")];
+  const courses = [
+    course({ id: "X", availability: ["WED_AM"], provider: "Acme", instructor: "อ.เดียวกัน" }),
+    course({ id: "Y", availability: ["WED_AM"], provider: "Acme", instructor: "อ.เดียวกัน" }),
+  ];
+  const result = planSchedule({ courses, rooms });
+  if (result.assignments.length !== 1) {
+    return `both were placed at once: ${JSON.stringify(result.assignments.map((a) => [a.courseId, a.roomId]))}`;
+  }
+  if (result.unassigned.length !== 1) return `expected one unassigned, got ${result.unassigned.length}`;
   return null;
 });
 
@@ -248,4 +288,4 @@ if (failures) {
   console.error(`\nscheduler: ${failures} failing check(s)`);
   process.exit(1);
 }
-console.log("scheduler: ok (12 checks)");
+console.log("scheduler: ok (13 checks)");

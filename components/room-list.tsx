@@ -6,7 +6,8 @@ import { EmptyResult } from "@/components/empty-result";
 import { PlanShell } from "@/components/plan-shell";
 import { ResultAnnouncer } from "@/components/result-announcer";
 import { formatNumber } from "@/lib/format";
-import { ALL_SLOTS, DAY_SHORT, DAYS, PERIODS, parseSlotId, type SlotId } from "@/lib/slots.ts";
+import { accentFor, buildRoomAccents } from "@/lib/room-colors.ts";
+import { ALL_SLOTS } from "@/lib/slots.ts";
 import type { PlanPayload, PlanRoom } from "@/lib/plan-types.ts";
 import { usePlanState } from "@/lib/use-plan-state";
 
@@ -20,37 +21,20 @@ import { usePlanState } from "@/lib/use-plan-state";
  */
 export function RoomList({ payload }: { payload: PlanPayload }) {
   const plan = usePlanState(payload);
+  const accents = useMemo(() => buildRoomAccents(plan.rooms), [plan.rooms]);
   const [minSeats, setMinSeats] = useState("");
-  const [building, setBuilding] = useState("");
   const [onlyFree, setOnlyFree] = useState(false);
 
-  const buildings = useMemo(
-    () => [...new Set(plan.rooms.map((room) => room.building))],
-    [plan.rooms],
-  );
-
-  /**
-   * "จ. ทั้งวัน · อ. เช้า, บ่าย" rather than the first four periods in order.
+  /*
+   * The card deliberately does not list which periods are free.
    *
-   * Listed raw, a room with a free Monday spends the whole line on Monday and
-   * ends "และอีก 14 คาบ" — which tells a reader looking for a Friday slot
-   * nothing at all. Grouping by day fits the whole week in the same space.
+   * It did, summarised by day, and it still read as a wall — "ว่าง: จ. ทั้งวัน ·
+   * อ. เช้า, บ่าย · พ. ทั้งวัน และอีก 3 วัน" is eighteen facts compressed into
+   * one line that has to be decoded rather than read. The room's own timetable
+   * is one click away and shows the same thing as a picture, so the card keeps
+   * the number that is actually scannable — how full the room is — and sends
+   * the reader there for the detail.
    */
-  const summariseFree = (free: SlotId[]) => {
-    const byDay = DAYS.map((day) => ({
-      day,
-      periods: free.filter((slotId) => parseSlotId(slotId).day === day).map((slotId) => parseSlotId(slotId).period),
-    })).filter((entry) => entry.periods.length > 0);
-    if (byDay.length === 0) return "เต็มทุกคาบ";
-    const shown = byDay.slice(0, 3).map((entry) =>
-      entry.periods.length === 3
-        ? `${DAY_SHORT[entry.day]} ทั้งวัน`
-        : `${DAY_SHORT[entry.day]} ${entry.periods.map((period) => PERIODS[period].label).join(", ")}`,
-    );
-    const rest = byDay.length - shown.length;
-    return `ว่าง: ${shown.join(" · ")}${rest > 0 ? ` และอีก ${rest} วัน` : ""}`;
-  };
-
   const usageFor = (room: PlanRoom) => {
     const used = plan.assignments.filter((item) => item.roomId === room.id);
     const capacity = ALL_SLOTS.length - room.blockedSlots.length;
@@ -64,7 +48,6 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
 
   const seatsFloor = Number(minSeats) || 0;
   const matching = plan.rooms.filter((room) => {
-    if (building && room.building !== building) return false;
     if (seatsFloor && room.seats < seatsFloor) return false;
     if (onlyFree && usageFor(room).free.length === 0) return false;
     return true;
@@ -81,10 +64,9 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
 
   const clearFilters = () => {
     setMinSeats("");
-    setBuilding("");
     setOnlyFree(false);
   };
-  const hasFilters = Boolean(minSeats || building || onlyFree);
+  const hasFilters = Boolean(minSeats || onlyFree);
 
   return (
     <PlanShell
@@ -117,13 +99,6 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
           </div>
         </div>
         <div className="filters">
-          <label>
-            อาคาร
-            <select value={building} onChange={(event) => setBuilding(event.target.value)}>
-              <option value="">ทั้งหมด</option>
-              {buildings.map((name) => <option key={name} value={name}>{name}</option>)}
-            </select>
-          </label>
           <label>
             ความจุขั้นต่ำ
             <input
@@ -172,7 +147,12 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
                   return (
                     <Link className="room-card" href={`/rooms/${room.id}`} key={room.id}>
                       <span className="room-card-head">
-                        <strong>{room.name}</strong>
+                        <strong>
+                          {/* The same swatch the board uses for this room, so a
+                              colour seen there can be traced back to a name. */}
+                          <span className="room-swatch" style={{ background: accentFor(accents, room.id) }} aria-hidden="true" />
+                          {room.name}
+                        </strong>
                         {room.tier === "NEEDS_APPROVAL" ? (
                           <span className="status-pill tone-orange">ต้องขออนุมัติ</span>
                         ) : null}
@@ -190,7 +170,6 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
                       <span className="mini-progress" aria-hidden="true">
                         <i style={{ width: `${Math.min(percent, 100)}%` }} />
                       </span>
-                      <span className="room-card-free">{summariseFree(usage.free)}</span>
                     </Link>
                   );
                 })}

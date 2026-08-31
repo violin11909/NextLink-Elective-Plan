@@ -5,23 +5,29 @@ export const PAGE_SIZE = 25;
 /**
  * Only rendered once a list outgrows a single page, so the ten-row demo looks
  * exactly as it did while a real term's worth of rows stays navigable.
+ *
+ * `pageSize` is passed in because the pages disagree about it for a reason: a
+ * reference table can take 25 rows, while a list you scan against a board on
+ * the same screen wants to stay short enough that the board is still visible.
  */
 export function Pager({
   page,
   pageCount,
   total,
   unit,
+  pageSize = PAGE_SIZE,
   onChange,
 }: {
   page: number;
   pageCount: number;
   total: number;
   unit: string;
+  pageSize?: number;
   onChange: (next: number) => void;
 }) {
   if (pageCount <= 1) return null;
-  const from = (page - 1) * PAGE_SIZE + 1;
-  const to = Math.min(page * PAGE_SIZE, total);
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
 
   return (
     <nav className="pager" aria-label={`แบ่งหน้ารายการ${unit}`}>

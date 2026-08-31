@@ -3,24 +3,29 @@
 import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
 import { ConflictPanel } from "@/components/conflict-panel";
-import { CourseChip } from "@/components/course-chip";
 import { EmptyResult } from "@/components/empty-result";
 import { FilterSummary } from "@/components/filter-summary";
-import { PAGE_SIZE, Pager } from "@/components/pager";
+import { Pager } from "@/components/pager";
+import { PlanMatrix } from "@/components/plan-matrix";
 import { PlanShell } from "@/components/plan-shell";
 import { PriorityKpi } from "@/components/priority-kpi";
 import { QueueFilterGroup } from "@/components/queue-filter";
 import { ResultAnnouncer } from "@/components/result-announcer";
+import { SlotFilters, matchesSlotFilter } from "@/components/slot-filters";
 import { StatusToast, useStatusToast } from "@/components/status-toast";
+import { BLOCKER_LABELS } from "@/lib/blocker-labels.ts";
 import { formatNumber } from "@/lib/format";
 import type { QueueKind } from "@/lib/queue";
-import { ALL_SLOTS, slotLabel, type SlotId } from "@/lib/slots.ts";
+import { accentFor, buildRoomAccents } from "@/lib/room-colors.ts";
+import { ALL_SLOTS, DAY_LABELS, PERIODS, slotLabel, type DayKey, type PeriodKey } from "@/lib/slots.ts";
 import type { PlanPayload, Suggestion } from "@/lib/plan-types.ts";
 import { usePlanState } from "@/lib/use-plan-state";
 import { useUrlFilters } from "@/lib/use-url-filters";
-import { WeekGrid } from "@/components/week-grid";
 
 type PlacementFilter = "all" | "placed" | "unplaced";
+
+/** Short enough that the board above stays on screen while the list is read. */
+const COURSE_PAGE_SIZE = 10;
 
 export function PlanOverview({ payload }: { payload: PlanPayload }) {
   const plan = usePlanState(payload);
@@ -29,18 +34,27 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
   const [search, setSearch] = useState("");
   const [provider, setProvider] = useState("");
   const [category, setCategory] = useState("");
+  const [day, setDay] = useState<DayKey | "">("");
+  const [period, setPeriod] = useState<PeriodKey | "">("");
   const [placement, setPlacement] = useState<PlacementFilter>("all");
   const [queue, setQueue] = useState<QueueKind | "all">("all");
   const [page, setPage] = useState(1);
   const deferredSearch = useDeferredValue(search);
+  const deferredProvider = useDeferredValue(provider);
 
-  useUrlFilters({ q: search, provider, category, placement: placement === "all" ? "" : placement }, (found) => {
-    if (found.q) setSearch(found.q);
-    if (found.provider) setProvider(found.provider);
-    if (found.category) setCategory(found.category);
-    if (found.placement === "placed" || found.placement === "unplaced") setPlacement(found.placement);
-  });
+  useUrlFilters(
+    { q: search, provider, category, day, period, placement: placement === "all" ? "" : placement },
+    (found) => {
+      if (found.q) setSearch(found.q);
+      if (found.provider) setProvider(found.provider);
+      if (found.category) setCategory(found.category);
+      if (found.day) setDay(found.day as DayKey);
+      if (found.period) setPeriod(found.period as PeriodKey);
+      if (found.placement === "placed" || found.placement === "unplaced") setPlacement(found.placement);
+    },
+  );
 
+  const accents = useMemo(() => buildRoomAccents(plan.rooms), [plan.rooms]);
   const roomsById = useMemo(() => new Map(plan.rooms.map((room) => [room.id, room])), [plan.rooms]);
   const coursesById = useMemo(() => new Map(plan.courses.map((course) => [course.id, course])), [plan.courses]);
 
@@ -55,14 +69,13 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
 
   const rows = useMemo(() => {
     const needle = deferredSearch.trim().toLowerCase();
+    const providerNeedle = deferredProvider.trim().toLowerCase();
     return plan.courses
-      .map((course) => ({
-        course,
-        placed: plan.assignments.filter((item) => item.courseId === course.id),
-      }))
+      .map((course) => ({ course, placed: plan.assignments.filter((item) => item.courseId === course.id) }))
       .filter(({ course, placed }) => {
-        if (provider && course.provider !== provider) return false;
+        if (providerNeedle && !course.provider.toLowerCase().includes(providerNeedle)) return false;
         if (category && course.category !== category) return false;
+        if (!matchesSlotFilter(course.availability, day, period)) return false;
         if (placement === "placed" && placed.length < course.sessionsPerWeek) return false;
         if (placement === "unplaced" && placed.length >= course.sessionsPerWeek) return false;
         if (!needle) return true;
@@ -71,11 +84,11 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           .toLowerCase()
           .includes(needle);
       });
-  }, [plan.courses, plan.assignments, deferredSearch, provider, category, placement]);
+  }, [plan.courses, plan.assignments, deferredSearch, deferredProvider, category, day, period, placement]);
 
-  const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(rows.length / COURSE_PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
-  const visible = rows.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const visible = rows.slice((safePage - 1) * COURSE_PAGE_SIZE, safePage * COURSE_PAGE_SIZE);
 
   const totalSessions = plan.courses.reduce((sum, course) => sum + course.sessionsPerWeek, 0);
   const lockedCount = plan.assignments.filter((item) => item.locked).length;
@@ -83,8 +96,6 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
     (item) => item.roomId && roomsById.get(item.roomId)?.tier === "NEEDS_APPROVAL",
   ).length;
 
-  /** Capacity is measured in จุฬาพัฒน์ only: those are the periods the
-   *  department can actually spend without asking anyone. */
   const readyCapacity = plan.rooms
     .filter((room) => room.tier === "READY")
     .reduce((sum, room) => sum + (ALL_SLOTS.length - room.blockedSlots.length), 0);
@@ -110,16 +121,25 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
 
   const runPlan = () => {
     const result = plan.runAutoAssign();
-    const message = result.unassigned.length
-      ? `จัดตารางแล้ว · ยังเหลือ ${formatNumber(result.unassigned.length)} วิชาที่ลงไม่ได้`
-      : `จัดตารางครบทั้ง ${formatNumber(result.assignments.length)} คาบแล้ว`;
-    show(message, plan.undo);
+    show(
+      result.unassigned.length
+        ? `จัดตารางแล้ว · ยังเหลือ ${formatNumber(result.unassigned.length)} วิชาที่ลงไม่ได้`
+        : `จัดตารางครบทั้ง ${formatNumber(result.assignments.length)} คาบแล้ว`,
+      plan.undo,
+    );
   };
 
   const activeFilters = [
     search ? { label: "ค้นหา", value: search, onClear: () => setSearch("") } : null,
     provider ? { label: "บริษัท", value: provider, onClear: () => setProvider("") } : null,
     category ? { label: "หมวด", value: category, onClear: () => setCategory("") } : null,
+    day || period
+      ? {
+          label: "ช่วงที่สะดวก",
+          value: [day ? DAY_LABELS[day] : "", period ? PERIODS[period].label : ""].filter(Boolean).join(" "),
+          onClear: () => { setDay(""); setPeriod(""); },
+        }
+      : null,
     placement !== "all"
       ? {
           label: "สถานะ",
@@ -133,6 +153,8 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
     setSearch("");
     setProvider("");
     setCategory("");
+    setDay("");
+    setPeriod("");
     setPlacement("all");
   };
 
@@ -216,14 +238,36 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
         </div>
       </div>
 
-      <section className="control-panel">
-        <div className="control-heading">
+      <section className="panel follow-up-panel">
+        <div className="panel-heading">
           <div>
-            <p className="section-kicker">เครื่องมือ</p>
-            <h3>จัดตารางและกรองรายวิชา</h3>
+            <p className="section-kicker">สิ่งที่ค้างอยู่</p>
+            <h3>รายการที่ต้องแก้ก่อนสรุปแผน</h3>
+          </div>
+          <span className="count-chip">{formatNumber(plan.conflicts.length)} รายการ</span>
+        </div>
+        <QueueFilterGroup
+          label="ความเร่งด่วน"
+          value={queue}
+          counts={plan.counts}
+          total={plan.conflicts.length}
+          onChange={setQueue}
+        />
+        <ConflictPanel conflicts={plan.conflicts} gaps={plan.gaps} filter={queue} onSuggestion={applySuggestion} />
+      </section>
+
+      <section className="panel matrix-panel">
+        <div className="panel-heading">
+          <div>
+            <p className="section-kicker">ทั้งภาควิชา · จันทร์ถึงเสาร์</p>
+            <h3>ตารางห้องเรียนทั้งสัปดาห์</h3>
           </div>
           <div className="table-heading-actions">
-            <button className="secondary-button" type="button" onClick={() => { plan.clearUnlocked(); show("ล้างคาบที่ยังไม่ล็อกแล้ว", plan.undo); }}>
+            <button
+              className="secondary-button"
+              type="button"
+              onClick={() => { plan.clearUnlocked(); show("ล้างคาบที่ยังไม่ล็อกแล้ว", plan.undo); }}
+            >
               ล้างที่ยังไม่ล็อก
             </button>
             <button className="primary-button" type="button" onClick={runPlan}>
@@ -231,22 +275,55 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
             </button>
           </div>
         </div>
+        <PlanMatrix
+          rooms={plan.rooms}
+          courses={plan.courses}
+          assignments={plan.assignments}
+          conflicts={plan.conflicts}
+          unplaced={plan.gaps.map((gap) => ({ course: gap.course, missing: gap.missing }))}
+          onPlace={plan.place}
+          onMove={plan.move}
+          onToggleLock={plan.toggleLock}
+          onRemove={(id) => { plan.remove(id); show("เอาวิชาออกจากตารางแล้ว", plan.undo); }}
+          onBlockedDrop={(title, slotId, blockers) =>
+            show(`${title} ลง${slotLabel(slotId)}แล้ว แต่ ${blockers.map((code) => BLOCKER_LABELS[code]).join(" · ")}`, plan.undo)
+          }
+        />
+      </section>
+
+      <section className="panel table-panel">
+        <div className="panel-heading table-heading">
+          <div>
+            <p className="section-kicker">รายวิชา</p>
+            <h3>ช่วงที่บริษัทสะดวก และคาบที่ได้จริง</h3>
+          </div>
+          <Link className="text-button" href="/courses">แก้ช่วงที่สะดวก</Link>
+        </div>
+
         <div className="filters">
           <label>
-            ค้นหาวิชา บริษัท หรือผู้สอน
+            ค้นหาวิชา หรือผู้สอน
             <input
               type="search"
               value={search}
-              placeholder="เช่น Cloud, Soft Square, อาจารย์ธนา"
+              placeholder="เช่น Cloud, อาจารย์ธนา"
               onChange={(event) => { setSearch(event.target.value); setPage(1); }}
             />
           </label>
           <label>
             บริษัท
-            <select value={provider} onChange={(event) => { setProvider(event.target.value); setPage(1); }}>
-              <option value="">ทั้งหมด</option>
-              {providers.map((name) => <option key={name} value={name}>{name}</option>)}
-            </select>
+            {/* A list, not a dropdown: a real term has hundreds of companies, and
+                a select with hundreds of options is a scroll, not a choice. */}
+            <input
+              type="search"
+              list="overview-providers"
+              value={provider}
+              placeholder="พิมพ์ชื่อบริษัท"
+              onChange={(event) => { setProvider(event.target.value); setPage(1); }}
+            />
+            <datalist id="overview-providers">
+              {providers.map((name) => <option key={name} value={name} />)}
+            </datalist>
           </label>
           <label>
             หมวด
@@ -266,73 +343,15 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
               <option value="unplaced">ยังจัดไม่ครบ</option>
             </select>
           </label>
+          <SlotFilters
+            day={day}
+            period={period}
+            onDay={(next) => { setDay(next); setPage(1); }}
+            onPeriod={(next) => { setPeriod(next); setPage(1); }}
+          />
         </div>
         <FilterSummary summary={`พบ ${formatNumber(rows.length)} วิชา`} filters={activeFilters} />
-      </section>
 
-      <section className="panel follow-up-panel">
-        <div className="panel-heading">
-          <div>
-            <p className="section-kicker">สิ่งที่ค้างอยู่</p>
-            <h3>รายการที่ต้องแก้ก่อนสรุปแผน</h3>
-          </div>
-          <span className="count-chip">{formatNumber(plan.conflicts.length)} รายการ</span>
-        </div>
-        <QueueFilterGroup
-          label="ความเร่งด่วน"
-          value={queue}
-          counts={plan.counts}
-          total={plan.conflicts.length}
-          onChange={setQueue}
-        />
-        <ConflictPanel conflicts={plan.conflicts} gaps={plan.gaps} filter={queue} onSuggestion={applySuggestion} />
-      </section>
-
-      <section className="panel">
-        <div className="panel-heading">
-          <div>
-            <p className="section-kicker">ทั้งภาควิชา</p>
-            <h3>ตารางรวมทั้งสัปดาห์</h3>
-          </div>
-          <span className="panel-caption">กดที่วิชาเพื่อดูรายละเอียด · แก้ไขได้ในหน้าห้องเรียน</span>
-        </div>
-        <WeekGrid
-          label="ตารางสอนรวมทุกห้อง"
-          renderCell={(slotId: SlotId) => {
-            const inSlot = plan.assignments.filter((item) => item.slotId === slotId);
-            if (inSlot.length === 0) return <span className="slot-empty-note">ว่าง</span>;
-            return (
-              <div className="slot-stack">
-                {inSlot.map((assignment) => {
-                  const course = coursesById.get(assignment.courseId);
-                  if (!course) return null;
-                  return (
-                    <CourseChip
-                      key={assignment.id}
-                      course={course}
-                      assignment={assignment}
-                      room={assignment.roomId ? roomsById.get(assignment.roomId) ?? null : null}
-                      hasConflict={plan.conflicts.some(
-                        (conflict) => conflict.severity === "BLOCKED" && conflict.assignmentIds.includes(assignment.id),
-                      )}
-                      onToggleLock={() => plan.toggleLock(assignment.id)}
-                    />
-                  );
-                })}
-              </div>
-            );
-          }}
-        />
-      </section>
-
-      <section className="panel table-panel">
-        <div className="panel-heading table-heading">
-          <div>
-            <p className="section-kicker">รายวิชา</p>
-            <h3>ช่วงที่บริษัทสะดวก และคาบที่ได้จริง</h3>
-          </div>
-          <Link className="text-button" href="/courses">แก้ช่วงที่สะดวก</Link>
-        </div>
         <ResultAnnouncer message={`พบ ${rows.length} วิชา`} />
         {rows.length === 0 ? (
           <EmptyResult message="ไม่พบวิชาที่ตรงกับตัวกรอง" hasFilters={activeFilters.length > 0} onClear={clearFilters} />
@@ -344,6 +363,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
                   <tr>
                     <th scope="col">วิชา</th>
                     <th scope="col">บริษัท</th>
+                    <th scope="col">ผู้สอน</th>
                     <th scope="col">ช่วงที่สะดวก</th>
                     <th scope="col">คาบที่ได้</th>
                     <th scope="col">ห้อง</th>
@@ -353,15 +373,24 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
                   {visible.map(({ course, placed }) => (
                     <tr key={course.id}>
                       <td>
-                        <span className="course-link">
+                        {/* Both the title and the company lead to the same page,
+                            filtered to what was clicked — from a row here the
+                            next question is always "what else can they do", and
+                            the answer lives on the availability page. */}
+                        <Link className="course-link" href={`/courses?q=${encodeURIComponent(course.title)}`}>
                           <strong>{course.title}</strong>
                           <span className="course-code">{course.courseCode} · {course.category}</span>
-                        </span>
+                        </Link>
                       </td>
                       <td>
-                        <span className="provider-name">{course.provider}</span>
-                        <small>{course.instructor}</small>
+                        {/* Straight to this company's courses with the filter
+                            already applied — the next thing anyone does after
+                            spotting a company here is look at its other slots. */}
+                        <Link className="provider-link" href={`/courses?provider=${encodeURIComponent(course.provider)}`}>
+                          {course.provider}
+                        </Link>
                       </td>
+                      <td><span className="schedule-text">{course.instructor}</span></td>
                       <td>
                         <span className="schedule-text">
                           {course.availability.map(slotLabel).join(" · ") || "ยังไม่ได้แจ้ง"}
@@ -373,11 +402,8 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
                         ) : (
                           <span className="status-stack">
                             {placed.map((item) => (
-                              <span
-                                className={`status-pill ${item.locked ? "tone-green" : "tone-blue"}`}
-                                key={item.id}
-                              >
-                                {slotLabel(item.slotId)} {item.locked ? "· ยืนยันแล้ว" : ""}
+                              <span className={`status-pill ${item.locked ? "tone-green" : "tone-blue"}`} key={item.id}>
+                                {slotLabel(item.slotId)}{item.locked ? " · ยืนยันแล้ว" : ""}
                               </span>
                             ))}
                           </span>
@@ -388,12 +414,22 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
                       </td>
                       <td>
                         {course.deliveryMode === "ONLINE" ? (
-                          <span className="category-tag">ออนไลน์</span>
+                          <span className="room-tag" style={{ ["--room-accent" as string]: accentFor(accents, null) }}>
+                            ออนไลน์
+                          </span>
+                        ) : placed.length === 0 ? (
+                          <span className="schedule-text">—</span>
                         ) : (
-                          <span className="schedule-text">
-                            {placed
-                              .map((item) => (item.roomId ? roomsById.get(item.roomId)?.name ?? item.roomId : "—"))
-                              .join(" · ") || "—"}
+                          <span className="status-stack">
+                            {placed.map((item) => (
+                              <span
+                                className="room-tag"
+                                key={item.id}
+                                style={{ ["--room-accent" as string]: accentFor(accents, item.roomId) }}
+                              >
+                                {item.roomId ? roomsById.get(item.roomId)?.name ?? item.roomId : "ออนไลน์"}
+                              </span>
+                            ))}
                           </span>
                         )}
                         <small>รับ {formatNumber(course.capacity)} คน</small>
@@ -403,7 +439,14 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
                 </tbody>
               </table>
             </div>
-            <Pager page={safePage} pageCount={pageCount} total={rows.length} unit="วิชา" onChange={setPage} />
+            <Pager
+              page={safePage}
+              pageCount={pageCount}
+              total={rows.length}
+              unit="วิชา"
+              pageSize={COURSE_PAGE_SIZE}
+              onChange={setPage}
+            />
           </>
         )}
       </section>

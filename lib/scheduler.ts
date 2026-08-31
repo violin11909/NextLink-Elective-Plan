@@ -280,7 +280,20 @@ function explain(course: PlanCourse, placed: Assignment[], ctx: Ctx): FailureRea
     const perRoom = roomOptions.map((room) => ({ room, blockers: blockersFor(course, slotId, room, placed, ctx) }));
     if (perRoom.some((entry) => entry.blockers.length === 0)) continue;
 
-    const blockers = [...new Set(perRoom.flatMap((entry) => entry.blockers))];
+    /*
+     * Report only what blocks EVERY option, not everything seen anywhere.
+     *
+     * The union lists "the room is too small" whenever any one room is too
+     * small, which is nearly always true with nine rooms of different sizes —
+     * so a course actually held up by a busy lecturer read as a room problem,
+     * and the reader went looking for a bigger room. The intersection is the
+     * set of reasons that survived every candidate. It can be empty when the
+     * options failed for different reasons; the union is the fallback then.
+     */
+    const shared = perRoom
+      .map((entry) => entry.blockers)
+      .reduce((left, right) => left.filter((code) => right.includes(code)), perRoom[0]?.blockers ?? []);
+    const blockers = shared.length > 0 ? shared : [...new Set(perRoom.flatMap((entry) => entry.blockers))];
     const details: string[] = [];
 
     const { startTime, endTime } = defaultTimesFor(slotId);
@@ -489,8 +502,19 @@ export function planSchedule(input: {
   if (first.unassigned.length === 0 || ready.length === input.rooms.length) return first;
 
   const stuck = new Set(first.unassigned.map((entry) => entry.courseId));
+  /*
+   * The second pass gets the WHOLE course list, not just the stuck ones.
+   *
+   * It only *places* the stuck ones — everything else arrives already placed in
+   * `locked`, so its remaining-session count is zero and it is never picked. But
+   * the rules need to look those courses up by id: passing a filtered list left
+   * `blockersFor` unable to resolve the course behind a locked assignment, so
+   * the instructor and provider checks silently skipped it and a company got
+   * booked to teach two classes at once — in a different room, which is why the
+   * room check did not catch it either.
+   */
   const second = autoAssign({
-    courses: input.courses.filter((course) => stuck.has(course.id)),
+    courses: input.courses,
     rooms: input.rooms,
     locked: [...(input.locked ?? []), ...first.assignments.filter((item) => !stuck.has(item.courseId))],
     options: input.options,

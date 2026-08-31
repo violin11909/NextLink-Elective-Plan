@@ -21,10 +21,7 @@
       "seats": 236,
       "seatsIsEstimated": false,
       "tier": "READY",
-      "blockedSlots": [
-        { "slotId": "MON_AM", "reason": "ใช้จัดกิจกรรมภาควิชา" },
-        { "slotId": "MON_PM", "reason": "ใช้จัดกิจกรรมภาควิชา" }
-      ]
+      "blockedSlots": []
     },
     {
       "id": "cp4-3f-a",

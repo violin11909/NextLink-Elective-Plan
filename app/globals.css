@@ -89,7 +89,7 @@ but the effect never fires from a scroll on touch, and dropping the shadow
 from the transition keeps it on the compositor instead of repainting. */
 @media (hover: hover) and (pointer: fine) {
   .kpi-card-button:hover { transform: translateY(-2px); border-color: #e7b1b7; box-shadow: 0 16px 34px rgba(30, 49, 80, .12); }
-  }
+}
 .kpi-card-button.is-active { border-color: #d95460; box-shadow: 0 0 0 3px rgba(217, 84, 96, .12), var(--shadow); }
 .priority-kpi { background: linear-gradient(180deg, #fff 0%, #fff8f9 100%); }
 .priority-kpi .kpi-value { color: #b93445; }
@@ -128,7 +128,10 @@ from the transition keeps it on the compositor instead of repainting. */
 .selection-chip:hover { border-color: #7da0e8; background: #e8efff; }
 .readiness-fill { display: block; height: 100%; border-radius: inherit; background: var(--blue); }.readiness-fill.green { background: var(--green); }.readiness-fill.orange { background: var(--orange); }.readiness-fill.red { background: var(--red); }
 /* Every dashboard leads its table with the same follow-up panel. */
-.follow-up-panel { margin-bottom: 18px; }
+/* Panels stacked on one page need air between them, and until now each one that
+   happened to need it carried its own margin — so the board, added later,
+   touched the course table below it. One rule for every pair instead. */
+.panel + .panel { margin-top: 22px; }
 .queue-heading-actions { display: flex; align-items: center; gap: 12px; }
 .count-chip { padding: 7px 10px; border-radius: 999px; color: #ac3441; background: #fff0f1; font-size: 13px; font-weight: 800; }
 .queue-filter-group { display: flex; flex-wrap: wrap; gap: 7px; margin: -3px 0 15px; }
@@ -169,8 +172,7 @@ Two nested scroll areas on one long page is worse than no sticky header. */
 .table-heading-actions { display: flex; align-items: center; gap: 14px; }
 table { width: 100%; border-collapse: separate; border-spacing: 0; min-width: 930px; } th, td { padding: 14px 14px; border-bottom: 1px solid #edf0f4; text-align: left; vertical-align: middle; } tbody tr:last-child td { border-bottom: 0; } th { position: sticky; top: 0; z-index: 1; color: var(--muted); background: var(--surface); box-shadow: inset 0 -1px 0 #e3e7ee; font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; } td { color: #38445b; font-size: 14px; }
 .course-link { display: grid; gap: 4px; padding: 0; border: 0; text-align: left; color: inherit; background: transparent; }.course-link:hover strong { color: var(--blue); }.course-link strong { color: #202c42; font-size: 15px; }.course-code { color: var(--muted-2); font-size: 12px; }
-.category-tag { display: inline-block; max-width: 150px; padding: 5px 8px; border-radius: 6px; color: #5f6a80; background: #f1f4f8; font-size: 12px; line-height: 1.5; }
-.provider-name, td small { display: block; }.provider-name { color: #354158; font-weight: 700; } td small { margin-top: 4px; color: var(--muted-2); font-size: 12px; }.schedule-text { display: block; max-width: 190px; color: #536077; line-height: 1.4; }.mini-progress { display: block; height: 5px; overflow: hidden; border-radius: 999px; background: #edf0f5; }.mini-progress i { display: block; height: 100%; border-radius: inherit; background: #7198e7; }
+td small { display: block; } td small { margin-top: 4px; color: var(--muted-2); font-size: 12px; }.schedule-text { display: block; max-width: 190px; color: #536077; line-height: 1.4; }.mini-progress { display: block; height: 5px; overflow: hidden; border-radius: 999px; background: #edf0f5; }.mini-progress i { display: block; height: 100%; border-radius: inherit; background: #7198e7; }
 /* One pill, one tone set, shared by all three dashboards. Each dashboard maps
 its own vocabulary onto these tones; only the mapping is domain-specific. */
 .status-pill { display: inline-flex; align-items: center; width: fit-content; padding: 5px 8px; border-radius: 7px; font-size: 12px; font-weight: 850; line-height: 1.45; white-space: nowrap; }.status-pill-subtle { padding: 3px 6px; font-size: 12px; }.status-stack { display: grid; justify-items: start; gap: 5px; }
@@ -232,45 +234,51 @@ the thing overflowing. The last fields and the save button were unreachable. */
 @media (max-width: 1050px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } .filters { grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(145px, 1fr)); } }
 @media (max-width: 760px) {
   :root { --page-max: 680px; --page-width: min(var(--page-max), 94%); --page-gutter: max(3%, calc((100% - var(--page-max)) / 2)); }
-
-  /* Every control gets a 44px target. Applied only on small screens so the
-     desktop tables stay compact. */
-  .row-action, .queue-filter-button, .text-button, .filter-summary button, .selection-chip, .secondary-button, .primary-button, .icon-button, .app-nav a, .course-link { min-height: var(--tap-min); }
-  .course-link { padding-block: 4px; }
-  .row-action, .queue-filter-button, .filter-summary button { padding-block: 9px; }
-  .text-button { display: inline-flex; align-items: center; }
-
-  .topbar, .intro-row { display: flex; align-items: flex-start; flex-direction: column; }
-  /* Source badge and timestamp share one line so the header stops eating half
-     the first screen before any content appears. */
-  .topbar { gap: 14px; padding-block: 16px; }
-  .header-meta { width: 100%; align-items: center; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 10px; }
-  .brand-mark { width: 36px; height: 36px; border-radius: 11px; font-size: 19px; }
-  .page-content { padding-top: 28px; }
-  .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-  .kpi-card { min-height: 118px; padding: 16px 15px 14px; }
-  /* Two cards sit side by side here and a Thai label rarely fits one line at
-     this width. Reserving both lines keeps the numbers on a shared baseline
-     instead of dropping one card's value 20px below its neighbour's. */
-  .kpi-card:not(.priority-kpi) .kpi-topline { align-items: flex-start; min-height: 41px; }
-  .kpi-card.priority-kpi { grid-column: 1 / -1; }
-  .kpi-card:last-child { grid-column: auto; }
-  .kpi-value { margin-top: 14px; font-size: 24px; }
-  .kpi-value.compact { font-size: 20px; }
-  .kpi-breakdown { margin-top: 8px; }
-  .filters { grid-template-columns: 1fr; }
-  .readiness-heading-meta { align-items: flex-end; flex-direction: column; gap: 5px; }.selection-chip-list { justify-content: flex-end; }
-  .dialog-header { padding: 20px 18px 16px; }
-  .dialog-content { padding: 18px; }
-  .table-heading-actions { align-items: flex-end; flex-direction: column; gap: 6px; }
-  .table-wrap { display: none; }
-  }
+    
+      /* Every control gets a 44px target. Applied only on small screens so the
+         desktop tables stay compact. */
+      .row-action, .queue-filter-button, .text-button, .filter-summary button, .selection-chip, .secondary-button, .primary-button, .icon-button, .app-nav a, .course-link { min-height: var(--tap-min); }
+      .course-link { padding-block: 4px; }
+      .row-action, .queue-filter-button, .filter-summary button { padding-block: 9px; }
+      .text-button { display: inline-flex; align-items: center; }
+    
+      .topbar, .intro-row { display: flex; align-items: flex-start; flex-direction: column; }
+      /* Source badge and timestamp share one line so the header stops eating half
+         the first screen before any content appears. */
+      .topbar { gap: 14px; padding-block: 16px; }
+      .header-meta { width: 100%; align-items: center; flex-direction: row; flex-wrap: wrap; justify-content: flex-start; gap: 10px; }
+      .brand-mark { width: 36px; height: 36px; border-radius: 11px; font-size: 19px; }
+      .page-content { padding-top: 28px; }
+      .kpi-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .kpi-card { min-height: 118px; padding: 16px 15px 14px; }
+      /* Two cards sit side by side here and a Thai label rarely fits one line at
+         this width. Reserving both lines keeps the numbers on a shared baseline
+         instead of dropping one card's value 20px below its neighbour's. */
+      .kpi-card:not(.priority-kpi) .kpi-topline { align-items: flex-start; min-height: 41px; }
+      .kpi-card.priority-kpi { grid-column: 1 / -1; }
+      .kpi-card:last-child { grid-column: auto; }
+      .kpi-value { margin-top: 14px; font-size: 24px; }
+      .kpi-value.compact { font-size: 20px; }
+      .kpi-breakdown { margin-top: 8px; }
+      .filters { grid-template-columns: 1fr; }
+      .readiness-heading-meta { align-items: flex-end; flex-direction: column; gap: 5px; }.selection-chip-list { justify-content: flex-end; }
+      .dialog-header { padding: 20px 18px 16px; }
+      .dialog-content { padding: 18px; }
+      .table-heading-actions { align-items: flex-end; flex-direction: column; gap: 6px; }
+    /* This used to be `display: none`, paired with a card list that rendered the
+       same rows in a phone-shaped layout. The card list went with the v1
+       dashboards and the rule stayed, so the course table was simply absent on a
+       phone — 18 courses, filters, a pager, and nothing between them. The table
+       scrolls sideways inside its own box instead; the page does not. */
+    .table-wrap { display: block; margin-inline: 0; }
+    .table-panel table { min-width: 620px; }
+}
 
 @media (max-width: 480px) {
   .kpi-grid { grid-template-columns: 1fr 1fr; }
-  .kpi-label { font-size: 13px; }
-  .panel, .control-panel { padding-left: 16px; padding-right: 16px; }
-  }
+      .kpi-label { font-size: 13px; }
+      .panel, .control-panel { padding-left: 16px; padding-right: 16px; }
+}
 
 /* MOU dashboard */
 .app-nav { display: flex; align-items: center; gap: 5px; padding: 4px; border: 1px solid rgba(255,255,255,.12); border-radius: 11px; background: rgba(255,255,255,.06); }
@@ -278,9 +286,9 @@ the thing overflowing. The last fields and the save button were unreachable. */
 .app-nav a:hover, .app-nav a.is-active { color: #203252; background: #e5efff; }
 @media (max-width: 760px) {
   .topbar { flex-wrap: wrap; }
-  .app-nav { order: 3; width: 100%; }
-  .app-nav a { flex: 1; text-align: center; }
-  }
+      .app-nav { order: 3; width: 100%; }
+      .app-nav a { flex: 1; text-align: center; }
+}
 
 .secondary-button, .primary-button { display: inline-flex; align-items: center; justify-content: center; min-height: 34px; padding: 8px 12px; border-radius: 8px; font-size: 13px; font-weight: 800; cursor: pointer; }
 .secondary-button { border: 1px solid #dce4f0; color: #315faf; background: #f7faff; }
@@ -310,8 +318,6 @@ how a page ends up rendering every row twice. */
 .period-label strong { color: #3d4b65; font-size: 13px; }
 .period-label small { color: var(--muted-2); font-size: 12px; }
 .week-grid-cell { display: grid; min-width: 0; }
-.slot-empty-note { display: grid; place-items: center; min-height: 62px; border: 1px dashed #e3e8f0; border-radius: 11px; color: #9aa4b7; font-size: 12px; }
-.slot-stack { display: grid; align-content: start; gap: 6px; }
 
 /* A period in one room. `is-empty` keeps the dashed outline of an invitation
 rather than looking like a disabled control; `is-blocked` is flat grey
@@ -359,13 +365,12 @@ panel exists to avoid. */
 .room-card { display: grid; align-content: start; gap: 7px; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: #fff; text-decoration: none; color: inherit; transition: transform .15s, border-color .15s; }
 @media (hover: hover) and (pointer: fine) {
   .room-card:hover { transform: translateY(-2px); border-color: #9bb7ed; }
-  }
+}
 .room-card-head { display: flex; align-items: center; justify-content: space-between; gap: 9px; }
 .room-card-head strong { color: #202c42; font-size: 15px; }
 .room-card-meta { display: flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12px; }
 .room-card-meta .note-icon { width: 15px; height: 15px; font-size: 11px; }
 .room-card-usage { color: #3d4b65; font-size: 13px; font-weight: 700; }
-.room-card-free { color: var(--muted-2); font-size: 12px; line-height: 1.5; }
 
 .assign-dialog { width: min(620px, calc(100vw - 28px)); max-height: min(88vh, 760px); }
 .assign-option-list { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
@@ -399,30 +404,124 @@ out — but it should never happen without the reader seeing it. */
 .availability-slot.is-used { border-color: #3b70dc; color: var(--blue); background: #edf3ff; }
 
 @media (max-width: 1050px) {
-  .week-grid-row { grid-template-columns: 62px repeat(6, minmax(0, 1fr)); gap: 6px; }
-  .week-day-full { display: none; }
-  .week-day-short { display: inline; }
-  .availability-row { grid-template-columns: 74px repeat(6, minmax(0, 1fr)); }
-  }
+  /* Between the phone layout and a full desktop the header meta had nowhere to
+       go: nav, edit note, source badge and timestamp on one line ran past the
+       right edge and scrolled the whole page sideways. Let it wrap here — the
+       nowrap above is only worth having while there is room for it. */
+    .header-meta { flex-wrap: wrap; justify-content: flex-end; min-width: 0; }
+    .local-edit-note { white-space: normal; }
+    .week-grid-row { grid-template-columns: 62px repeat(6, minmax(0, 1fr)); gap: 6px; }
+      .week-day-full { display: none; }
+      .week-day-short { display: inline; }
+      .availability-row { grid-template-columns: 74px repeat(6, minmax(0, 1fr)); }
+}
 
 @media (max-width: 760px) {
   /* Six columns on a phone either scroll sideways — taking the day heading off
-     screen with them — or squeeze each column below the width of a Thai course
-     title. The day list keeps both. */
-  .week-grid { display: none; }
-  .week-day-list { display: grid; gap: 12px; }
-  .week-day-card { display: grid; gap: 10px; padding: 14px; border: 1px solid #e9edf3; border-radius: 13px; background: #fcfdff; }
-  .week-day-card h4 { margin: 0; color: #26324a; font-size: 15px; }
-  .week-day-period { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: start; gap: 10px; }
-  .week-day-slot { min-width: 0; }
-  .conflict-row { grid-template-columns: 25px minmax(0, 1fr); }
-  .conflict-row .follow-up-severity { grid-column: 2; }
-  .room-grid { grid-template-columns: 1fr; }
-  .assign-option { grid-template-columns: 1fr; }
-  .assign-option-warnings { justify-content: flex-start; max-width: none; }
-  .availability-row { grid-template-columns: 64px repeat(6, minmax(0, 1fr)); gap: 4px; }
-  .availability-period small { display: none; }
-  .availability-slot { min-height: var(--tap-min); }
-  .slot-add { min-height: var(--tap-min); }
-  .chip-action { width: 34px; height: 34px; }
-  }
+         screen with them — or squeeze each column below the width of a Thai course
+         title. The day list keeps both. */
+      .week-grid { display: none; }
+      .week-day-list { display: grid; gap: 12px; }
+      .week-day-card { display: grid; gap: 10px; padding: 14px; border: 1px solid #e9edf3; border-radius: 13px; background: #fcfdff; }
+      .week-day-card h4 { margin: 0; color: #26324a; font-size: 15px; }
+      .week-day-period { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: start; gap: 10px; }
+      .week-day-slot { min-width: 0; }
+      .conflict-row { grid-template-columns: 25px minmax(0, 1fr); }
+      .conflict-row .follow-up-severity { grid-column: 2; }
+      .room-grid { grid-template-columns: 1fr; }
+      .assign-option { grid-template-columns: 1fr; }
+      .assign-option-warnings { justify-content: flex-start; max-width: none; }
+      .availability-row { grid-template-columns: 64px repeat(6, minmax(0, 1fr)); gap: 4px; }
+      .availability-period small { display: none; }
+      .availability-slot { min-height: var(--tap-min); }
+      .slot-add { min-height: var(--tap-min); }
+      .chip-action { width: 34px; height: 34px; }
+}
+
+/* The board — a column per room, a row per period */
+
+/* The board is the widest thing in the product and the page column is sized for
+   reading prose. Ten room columns inside 880px means scrolling sideways to see
+   the week, so this one panel breaks out of the column and takes the viewport. */
+.matrix-panel { margin-inline: calc((100% - min(96vw, 1560px)) / 2); }
+/* `min-width: 0` on both, or the board does not scroll — it pushes.
+   A grid item defaults to min-width:auto, so the max-content table inside made
+   .matrix-scroll grow past the panel instead of scrolling inside it, and the
+   whole document ended up 2000px wide on a phone. */
+.matrix-block { display: grid; min-width: 0; gap: 13px; }
+/* The tray sits with the board, not in the follow-up list further up the page:
+   a course being dragged has to start next to where it is going. */
+.matrix-tray { display: grid; gap: 9px; padding: 13px; border: 1px solid #e7ebf2; border-radius: 13px; background: #fbfcfe; }
+.matrix-tray-head { display: flex; align-items: center; gap: 9px; }
+.matrix-tray-head strong { color: #26324a; font-size: 14px; }
+.matrix-tray-empty { margin: 0; color: var(--muted); font-size: 13px; }
+.matrix-tray-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.tray-chip { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; max-width: 340px; padding: 8px 9px; border: 1px solid #e0d5b8; border-radius: 10px; background: #fffdf6; cursor: grab; }
+.tray-chip.is-held { border-color: #3b70dc; background: #edf3ff; }
+.tray-chip-copy { display: grid; min-width: 0; gap: 2px; }
+.tray-chip-copy strong { color: #26324a; font-size: 13px; }
+.tray-chip-copy small { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.matrix-holding { margin: 0; }
+
+/* `position: relative` is load-bearing, not decoration.
+   Every button on the board carries a .sr-only label, and .sr-only is
+   absolutely positioned. With no positioned ancestor inside the scroller their
+   containing block was the page itself, so overflow:auto never clipped them —
+   the labels of cells 2000px to the right stretched the document and the whole
+   page scrolled sideways on every screen size. */
+.matrix-scroll { position: relative; min-width: 0; overflow: auto; max-height: 74vh; border: 1px solid var(--line); border-radius: 13px; overscroll-behavior: contain; }
+.matrix { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
+.matrix th, .matrix td { border-bottom: 1px solid #edf0f5; border-right: 1px solid #edf0f5; }
+.matrix-corner { position: sticky; top: 0; left: 0; z-index: 4; width: 104px; min-width: 104px; padding: 9px 11px; color: var(--muted); background: #f4f6fa; font-size: 12px; text-align: left; }
+.matrix-room { position: sticky; top: 0; z-index: 3; min-width: 168px; padding: 9px 11px; color: #3d4b65; background: #f4f6fa; font-size: 12px; font-weight: 800; text-align: left; vertical-align: middle; }
+/* Colour is never the only cue: the room's name is beside every swatch, here
+   and on each card. That is what lets the palette stay at four hues. */
+.room-swatch { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 999px; vertical-align: baseline; }
+.matrix-day th { position: sticky; left: 0; z-index: 2; padding: 6px 11px; color: #2b3750; background: #eef1f7; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-align: left; }
+.matrix-slot { position: sticky; left: 0; z-index: 2; display: table-cell; padding: 8px 11px; background: #fbfcfe; text-align: left; vertical-align: top; }
+.matrix-slot strong { display: block; color: #3d4b65; font-size: 13px; }
+.matrix-slot small { color: var(--muted-2); font-size: 12px; }
+.matrix-cell { min-width: 168px; padding: 6px; vertical-align: top; background: #fff; }
+.matrix-cell.is-blocked { background: repeating-linear-gradient(135deg, #f4f6fa, #f4f6fa 6px, #eef1f6 6px, #eef1f6 12px); }
+/* Live answer to "can this go here", given while the cursor is still moving —
+   the check has to arrive before the drop, not after it. */
+.matrix-cell.is-drop-ok { outline: 2px solid #3aa06f; outline-offset: -2px; background: #f2fbf7; }
+.matrix-cell.is-drop-blocked { outline: 2px solid #d98324; outline-offset: -2px; background: #fff8ef; }
+.matrix-blocked { display: block; padding: 4px 2px; color: #6d778c; font-size: 12px; }
+.matrix-chip { display: grid; gap: 4px; padding: 7px 8px; border: 1px solid #dfe6f2; border-radius: 9px; background: #fff; cursor: grab; }
+.matrix-chip + .matrix-chip { margin-top: 6px; }
+.matrix-chip.is-locked { border-color: #a8ddc6; background: #f4fcf8; cursor: default; }
+.matrix-chip.is-conflict { border-color: #e7b1b7; background: #fff6f7; }
+.matrix-chip.is-held { border-color: #3b70dc; background: #edf3ff; }
+.matrix-chip-copy { display: grid; min-width: 0; gap: 2px; }
+.matrix-chip-copy strong { display: -webkit-box; overflow: hidden; color: #26324a; font-size: 13px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.matrix-chip-copy small { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.matrix-drop { display: grid; place-items: center; width: 100%; min-height: 32px; margin-top: 6px; border: 1px dashed #c9d3e3; border-radius: 8px; color: #5c6a83; background: #f7f9fc; font-size: 12px; font-weight: 700; }
+.matrix-drop.is-drop-ok { border-style: solid; border-color: #3aa06f; color: #0e6b4f; background: #eaf8f1; }
+/* Left plain on purpose. Painting all 180 "put it here" buttons orange because
+   they each break some rule turns the whole board into a warning and hides the
+   green ones, which are the answer to the question being asked. Blocked cells
+   colour on hover, when the reader is actually considering one. */
+.matrix-drop.is-drop-blocked:hover, .matrix-drop.is-drop-blocked:focus-visible { border-style: solid; border-color: #d98324; color: #8a4d0d; background: #fdf3e6; }
+
+/* One tag shape wherever a room is named outside the board itself. */
+.room-tag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border: 1px solid #e6eaf1; border-radius: 999px; color: #3d4b65; background: #f7f9fc; font-size: 12px; font-weight: 750; }
+.room-tag { border-color: color-mix(in srgb, var(--room-accent) 32%, #ffffff); background: color-mix(in srgb, var(--room-accent) 9%, #ffffff); }
+.room-tag::before { content: ""; width: 8px; height: 8px; border-radius: 999px; background: var(--room-accent); }
+.provider-link { color: var(--blue); font-weight: 700; text-decoration: none; }
+.provider-link:hover { text-decoration: underline; }
+
+/* A red border says something is wrong; this says what. */
+.slot-conflict-note { margin: 2px 0 0; color: #a3313c; font-size: 12px; line-height: 1.45; }
+.availability-legend { display: flex; align-items: center; flex-wrap: wrap; gap: 7px 10px; margin: 0; color: var(--muted); font-size: 12px; }
+.availability-legend .availability-slot { width: 26px; min-height: 26px; pointer-events: none; }
+
+@media (max-width: 760px) {
+  /* The board keeps its scroll on a phone. Ten room columns cannot fold into
+         one without losing the comparison the board exists to make, and unlike the
+         per-room grid there is no day-shaped list that says the same thing. */
+      .matrix-scroll { max-height: 62vh; }
+      .matrix-room, .matrix-cell { min-width: 148px; }
+      .matrix-corner, .matrix-slot { width: 86px; min-width: 86px; }
+      .tray-chip { max-width: none; }
+}

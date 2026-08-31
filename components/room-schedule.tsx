@@ -150,10 +150,15 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
               );
             }
 
-            const hasConflict = (assignmentId: string) =>
-              plan.conflicts.some(
+            const blockingFor = (assignmentId: string) =>
+              plan.conflicts.filter(
                 (conflict) => conflict.severity === "BLOCKED" && conflict.assignmentIds.includes(assignmentId),
               );
+            const hasConflict = (assignmentId: string) => blockingFor(assignmentId).length > 0;
+            // A red border says "something is wrong here" and nothing else. The
+            // reader then has to hunt the follow-up list for which of the eight
+            // rules it broke — so the cell says it in place.
+            const cellProblems = [...new Set(here.flatMap((item) => blockingFor(item.id).map((c) => c.title)))];
 
             return (
               <div
@@ -178,6 +183,7 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
                       assignment={assignment}
                       room={room}
                       showRoom={false}
+                      showTime={false}
                       hasConflict={hasConflict(assignment.id)}
                       draggable
                       onToggleLock={() => plan.toggleLock(assignment.id)}
@@ -190,6 +196,10 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
                     />
                   );
                 })}
+
+                {cellProblems.length > 0 ? (
+                  <p className="slot-conflict-note">{cellProblems.join(" · ")}</p>
+                ) : null}
 
                 {moving ? (
                   <button className="slot-add is-move-target" type="button" onClick={() => moveTo(slotId)}>

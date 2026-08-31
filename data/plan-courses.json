@@ -3,7 +3,7 @@
   "lastUpdated": "2026-08-31T09:00:00+07:00",
   "timezone": "Asia/Bangkok",
   "isMock": true,
-  "note": "ข้อมูลตัวอย่าง ไม่ใช่อีเมล/LINE จริง — availability คือช่วงที่บริษัทแจ้งว่าสะดวกสอน",
+  "note": "ข้อมูลตัวอย่าง ไม่ใช่อีเมล/LINE จริง — availability คือช่วงที่บริษัทแจ้งว่าสะดวกสอน · 21105814 ตั้งใจให้จัดไม่ลง เพื่อให้เห็นหน้าจอตอนมีวิชาที่หา slot ไม่ได้",
   "courses": [
     {
       "id": "plan-21105801",
@@ -12,9 +12,15 @@
       "category": "วิศวกรรมซอฟต์แวร์",
       "provider": "Soft Square",
       "instructor": "อาจารย์กานต์",
-      "coordinator": { "name": "คุณนลิน", "email": "narin.softsquare@example.com", "lineId": "mock_softsquare_narin" },
+      "coordinator": {
+        "name": "คุณนลิน",
+        "email": "narin.softsquare@example.com",
+        "lineId": "mock_softsquare_narin"
+      },
       "deliveryMode": "ON_SITE",
-      "availability": ["WED_AM"],
+      "availability": [
+        "WED_AM"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 40,
       "capacity": 40,
@@ -28,9 +34,16 @@
       "category": "ปัญญาประดิษฐ์และข้อมูล",
       "provider": "Soft Square",
       "instructor": "อาจารย์เมธา",
-      "coordinator": { "name": "คุณพิมพ์ชนก", "email": "pimchanok.softsquare@example.com", "lineId": "mock_softsquare_pim" },
+      "coordinator": {
+        "name": "คุณพิมพ์ชนก",
+        "email": "pimchanok.softsquare@example.com",
+        "lineId": "mock_softsquare_pim"
+      },
       "deliveryMode": "HYBRID",
-      "availability": ["WED_PM", "FRI_AM"],
+      "availability": [
+        "WED_PM",
+        "FRI_AM"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 45,
       "capacity": 45,
@@ -44,9 +57,16 @@
       "category": "ปัญญาประดิษฐ์และข้อมูล",
       "provider": "Stelligence",
       "instructor": "อาจารย์ปริญญา",
-      "coordinator": { "name": "คุณเตนล์", "email": "ten.stelligence@example.com", "lineId": "mock_stelligence_ten" },
+      "coordinator": {
+        "name": "คุณเตนล์",
+        "email": "ten.stelligence@example.com",
+        "lineId": "mock_stelligence_ten"
+      },
       "deliveryMode": "ON_SITE",
-      "availability": ["TUE_PM", "THU_PM"],
+      "availability": [
+        "TUE_PM",
+        "THU_PM"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 40,
       "capacity": 40,
@@ -60,9 +80,17 @@
       "category": "วิศวกรรมซอฟต์แวร์",
       "provider": "Playtorium",
       "instructor": "อาจารย์ศิริ",
-      "coordinator": { "name": "คุณภัทร", "email": "phat.playtorium@example.com", "lineId": "mock_playtorium_phat" },
+      "coordinator": {
+        "name": "คุณภัทร",
+        "email": "phat.playtorium@example.com",
+        "lineId": "mock_playtorium_phat"
+      },
       "deliveryMode": "ON_SITE",
-      "availability": ["WED_PM", "THU_PM", "FRI_PM"],
+      "availability": [
+        "WED_PM",
+        "THU_PM",
+        "FRI_PM"
+      ],
       "sessionsPerWeek": 2,
       "minSeats": 45,
       "capacity": 45,
@@ -76,9 +104,17 @@
       "category": "ความมั่นคงปลอดภัยไซเบอร์",
       "provider": "Cyber Defense Lab",
       "instructor": "อาจารย์นภัส",
-      "coordinator": { "name": "คุณกิตติ", "email": "kitti.cyberdefense@example.com", "lineId": "mock_cyberdefense_kitti" },
+      "coordinator": {
+        "name": "คุณกิตติ",
+        "email": "kitti.cyberdefense@example.com",
+        "lineId": "mock_cyberdefense_kitti"
+      },
       "deliveryMode": "HYBRID",
-      "availability": ["MON_PM", "WED_AM", "FRI_EVE"],
+      "availability": [
+        "MON_PM",
+        "WED_AM",
+        "FRI_EVE"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 60,
       "capacity": 60,
@@ -92,9 +128,16 @@
       "category": "การวิเคราะห์ข้อมูล",
       "provider": "DataPulse",
       "instructor": "อาจารย์วริน",
-      "coordinator": { "name": "คุณอรทัย", "email": "orathai.datapulse@example.com", "lineId": "mock_datapulse_orathai" },
+      "coordinator": {
+        "name": "คุณอรทัย",
+        "email": "orathai.datapulse@example.com",
+        "lineId": "mock_datapulse_orathai"
+      },
       "deliveryMode": "ONLINE",
-      "availability": ["THU_AM", "SAT_AM"],
+      "availability": [
+        "THU_AM",
+        "SAT_AM"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 0,
       "capacity": 40,
@@ -108,9 +151,16 @@
       "category": "คลาวด์และ DevOps",
       "provider": "CloudNexa",
       "instructor": "อาจารย์ธนา",
-      "coordinator": { "name": "คุณศุภชัย", "email": "supachai.cloudnexa@example.com", "lineId": "mock_cloudnexa_supachai" },
+      "coordinator": {
+        "name": "คุณศุภชัย",
+        "email": "supachai.cloudnexa@example.com",
+        "lineId": "mock_cloudnexa_supachai"
+      },
       "deliveryMode": "ON_SITE",
-      "availability": ["WED_AM", "FRI_PM"],
+      "availability": [
+        "WED_AM",
+        "FRI_PM"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 45,
       "capacity": 45,
@@ -124,9 +174,17 @@
       "category": "ผลิตภัณฑ์และ UX",
       "provider": "DesignCraft",
       "instructor": "อาจารย์ลลิตา",
-      "coordinator": { "name": "คุณมินตรา", "email": "mintra.designcraft@example.com", "lineId": "mock_designcraft_mintra" },
+      "coordinator": {
+        "name": "คุณมินตรา",
+        "email": "mintra.designcraft@example.com",
+        "lineId": "mock_designcraft_mintra"
+      },
       "deliveryMode": "HYBRID",
-      "availability": ["TUE_AM", "THU_AM", "SAT_PM"],
+      "availability": [
+        "TUE_AM",
+        "THU_AM",
+        "SAT_PM"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 30,
       "capacity": 30,
@@ -140,9 +198,16 @@
       "category": "ธุรกิจและการจัดการ",
       "provider": "BrightWorks",
       "instructor": "อาจารย์ภูมิ",
-      "coordinator": { "name": "คุณวริศรา", "email": "warisara.brightworks@example.com", "lineId": "mock_brightworks_warisara" },
+      "coordinator": {
+        "name": "คุณวริศรา",
+        "email": "warisara.brightworks@example.com",
+        "lineId": "mock_brightworks_warisara"
+      },
       "deliveryMode": "ONLINE",
-      "availability": ["FRI_PM", "SAT_AM"],
+      "availability": [
+        "FRI_PM",
+        "SAT_AM"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 0,
       "capacity": 50,
@@ -156,9 +221,16 @@
       "category": "ปัญญาประดิษฐ์และข้อมูล",
       "provider": "GraphMind",
       "instructor": "อาจารย์ชล",
-      "coordinator": { "name": "คุณรวิ", "email": "rawi.graphmind@example.com", "lineId": "mock_graphmind_rawi" },
+      "coordinator": {
+        "name": "คุณรวิ",
+        "email": "rawi.graphmind@example.com",
+        "lineId": "mock_graphmind_rawi"
+      },
       "deliveryMode": "HYBRID",
-      "availability": ["THU_PM", "TUE_PM"],
+      "availability": [
+        "THU_PM",
+        "TUE_PM"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 35,
       "capacity": 35,
@@ -172,9 +244,16 @@
       "category": "วิศวกรรมซอฟต์แวร์",
       "provider": "Pixel Forge",
       "instructor": "อาจารย์ธีร์",
-      "coordinator": { "name": "คุณเอมี่", "email": "amy.pixelforge@example.com", "lineId": "mock_pixelforge_amy" },
+      "coordinator": {
+        "name": "คุณเอมี่",
+        "email": "amy.pixelforge@example.com",
+        "lineId": "mock_pixelforge_amy"
+      },
       "deliveryMode": "ON_SITE",
-      "availability": ["MON_PM", "THU_EVE"],
+      "availability": [
+        "MON_PM",
+        "THU_EVE"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 30,
       "capacity": 30,
@@ -188,14 +267,158 @@
       "category": "คลาวด์และ DevOps",
       "provider": "CloudNexa",
       "instructor": "อาจารย์ธนา",
-      "coordinator": { "name": "คุณศุภชัย", "email": "supachai.cloudnexa@example.com", "lineId": "mock_cloudnexa_supachai" },
+      "coordinator": {
+        "name": "คุณศุภชัย",
+        "email": "supachai.cloudnexa@example.com",
+        "lineId": "mock_cloudnexa_supachai"
+      },
       "deliveryMode": "ON_SITE",
-      "availability": ["TUE_AM", "FRI_PM", "SAT_AM"],
+      "availability": [
+        "TUE_AM",
+        "FRI_PM",
+        "SAT_AM"
+      ],
       "sessionsPerWeek": 1,
       "minSeats": 55,
       "capacity": 55,
       "weeks": 10,
       "notes": "ผู้สอนคนเดียวกับ 21105807 จึงสอนสองวิชาในคาบเดียวกันไม่ได้"
+    },
+    {
+      "id": "plan-21105813",
+      "courseCode": "21105813",
+      "title": "Generative AI for Business Workflows",
+      "category": "ปัญญาประดิษฐ์และข้อมูล",
+      "provider": "Innovex",
+      "instructor": "อาจารย์ณัฐ",
+      "coordinator": {
+        "name": "คุณปาริชาต",
+        "email": "parichat.innovex@example.com",
+        "lineId": "mock_innovex_parichat"
+      },
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "TUE_PM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 40,
+      "capacity": 40,
+      "weeks": 10,
+      "notes": "Innovex ส่งวิทยากรได้คนเดียว และว่างเฉพาะอังคารบ่าย"
+    },
+    {
+      "id": "plan-21105814",
+      "courseCode": "21105814",
+      "title": "Responsible AI & Data Governance",
+      "category": "ปัญญาประดิษฐ์และข้อมูล",
+      "provider": "Innovex",
+      "instructor": "อาจารย์ณัฐ",
+      "coordinator": {
+        "name": "คุณปาริชาต",
+        "email": "parichat.innovex@example.com",
+        "lineId": "mock_innovex_parichat"
+      },
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "TUE_PM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 35,
+      "capacity": 35,
+      "weeks": 10,
+      "notes": "วิทยากรคนเดียวกับ 21105813 และว่างคาบเดียวกัน — ตั้งใจให้จัดไม่ลงเพื่อดูหน้าจอตอนติดปัญหา"
+    },
+    {
+      "id": "plan-21105815",
+      "courseCode": "21105815",
+      "title": "Embedded Systems for IoT",
+      "category": "ระบบฝังตัวและ IoT",
+      "provider": "Sensora",
+      "instructor": "อาจารย์พงศ์",
+      "coordinator": {
+        "name": "คุณธิดา",
+        "email": "thida.sensora@example.com",
+        "lineId": "mock_sensora_thida"
+      },
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "MON_AM",
+        "THU_AM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 35,
+      "capacity": 35,
+      "weeks": 9,
+      "notes": "ต้องมีปลั๊กไฟพอสำหรับบอร์ดทดลอง"
+    },
+    {
+      "id": "plan-21105816",
+      "courseCode": "21105816",
+      "title": "Test Automation & QA Engineering",
+      "category": "วิศวกรรมซอฟต์แวร์",
+      "provider": "Playtorium",
+      "instructor": "อาจารย์กมล",
+      "coordinator": {
+        "name": "คุณภัทร",
+        "email": "phat.playtorium@example.com",
+        "lineId": "mock_playtorium_phat"
+      },
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "MON_EVE",
+        "WED_EVE"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 40,
+      "capacity": 40,
+      "weeks": 8,
+      "notes": "บริษัทเดียวกับ 21105804 แต่คนละวิทยากร"
+    },
+    {
+      "id": "plan-21105817",
+      "courseCode": "21105817",
+      "title": "Blockchain & Digital Trust",
+      "category": "ความมั่นคงปลอดภัยไซเบอร์",
+      "provider": "ChainWorks",
+      "instructor": "อาจารย์อารีย์",
+      "coordinator": {
+        "name": "คุณสิรี",
+        "email": "siree.chainworks@example.com",
+        "lineId": "mock_chainworks_siree"
+      },
+      "deliveryMode": "HYBRID",
+      "availability": [
+        "FRI_AM",
+        "SAT_PM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 30,
+      "capacity": 30,
+      "weeks": 8,
+      "notes": null
+    },
+    {
+      "id": "plan-21105818",
+      "courseCode": "21105818",
+      "title": "Technical Writing for Engineers",
+      "category": "ธุรกิจและการจัดการ",
+      "provider": "BrightWorks",
+      "instructor": "อาจารย์วิภา",
+      "coordinator": {
+        "name": "คุณวริศรา",
+        "email": "warisara.brightworks@example.com",
+        "lineId": "mock_brightworks_warisara"
+      },
+      "deliveryMode": "ONLINE",
+      "availability": [
+        "MON_EVE",
+        "THU_EVE"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 0,
+      "capacity": 60,
+      "weeks": 10,
+      "notes": "สอนออนไลน์ล้วน ไม่ใช้ห้อง"
     }
   ]
 }

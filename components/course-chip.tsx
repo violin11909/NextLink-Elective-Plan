@@ -21,6 +21,7 @@ export function CourseChip({
   onRemove,
   draggable = false,
   showRoom = true,
+  showTime = true,
 }: {
   course: PlanCourse;
   assignment: Assignment;
@@ -34,6 +35,8 @@ export function CourseChip({
   /** False inside a single room's own grid, where naming the room on every
    *  chip only costs the course title the space it needs. */
   showRoom?: boolean;
+  /** Same idea for the clock: a grid row already says which period this is. */
+  showTime?: boolean;
 }) {
   return (
     <div
@@ -47,7 +50,8 @@ export function CourseChip({
       <button className="chip-body" type="button" onClick={onOpen}>
         <strong>{course.title}</strong>
         <small>
-          {course.provider} · {assignment.startTime}–{assignment.endTime}
+          {course.provider}
+          {showTime ? ` · ${assignment.startTime}–${assignment.endTime}` : ""}
           {showRoom ? (room ? ` · ${room.name}` : " · ออนไลน์") : ""}
         </small>
       </button>

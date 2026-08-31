@@ -1,20 +1,11 @@
 "use client";
 
 import { useMemo, useRef, useEffect } from "react";
+import { BLOCKER_LABELS } from "@/lib/blocker-labels.ts";
 import { formatNumber } from "@/lib/format";
 import { placementBlockers } from "@/lib/scheduler.ts";
 import { slotLabelWithTime, type SlotId } from "@/lib/slots.ts";
 import type { Assignment, BlockerCode, PlanCourse, PlanRoom } from "@/lib/plan-types.ts";
-
-const BLOCKER_LABELS: Record<BlockerCode, string> = {
-  OUTSIDE_AVAILABILITY: "บริษัทไม่ได้แจ้งว่าสะดวกคาบนี้",
-  ROOM_BLOCKED: "ห้องถูกกันไว้คาบนี้",
-  ROOM_DOUBLE_BOOKED: "ห้องถูกใช้อยู่แล้ว",
-  ROOM_TOO_SMALL: "ห้องเล็กกว่าจำนวนที่รับ",
-  INSTRUCTOR_BUSY: "ผู้สอนติดสอนวิชาอื่น",
-  PROVIDER_BUSY: "บริษัทส่งทีมไปสอนวิชาอื่นแล้ว",
-  NO_ROOM_AVAILABLE: "ไม่มีห้องรองรับ",
-};
 
 /**
  * Pick a course for one empty period in one room.

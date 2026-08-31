@@ -6,9 +6,11 @@ import { PlanShell } from "@/components/plan-shell";
 import { ResultAnnouncer } from "@/components/result-announcer";
 import { StatusToast, useStatusToast } from "@/components/status-toast";
 import { formatNumber } from "@/lib/format";
-import { DAYS, DAY_SHORT, PERIODS, PERIOD_KEYS, makeSlotId, slotLabel, type SlotId } from "@/lib/slots.ts";
+import { SlotFilters, matchesSlotFilter } from "@/components/slot-filters";
+import { DAYS, DAY_SHORT, PERIODS, PERIOD_KEYS, makeSlotId, slotLabel, type DayKey, type PeriodKey, type SlotId } from "@/lib/slots.ts";
 import type { PlanPayload } from "@/lib/plan-types.ts";
 import { usePlanState } from "@/lib/use-plan-state";
+import { useUrlFilters } from "@/lib/use-url-filters";
 
 /**
  * Where the companies' answers are kept up to date.
@@ -23,7 +25,19 @@ export function AvailabilityEditor({ payload }: { payload: PlanPayload }) {
   const { toast, show, dismiss, holdTimer, resumeTimer } = useStatusToast();
   const [search, setSearch] = useState("");
   const [provider, setProvider] = useState("");
+  const [day, setDay] = useState<DayKey | "">("");
+  const [period, setPeriod] = useState<PeriodKey | "">("");
   const deferredSearch = useDeferredValue(search);
+  const deferredProvider = useDeferredValue(provider);
+
+  // Arriving from a company name on the overview lands here with that company
+  // already filled in, which is the only reason that link is worth clicking.
+  useUrlFilters({ q: search, provider, day, period }, (found) => {
+    if (found.q) setSearch(found.q);
+    if (found.provider) setProvider(found.provider);
+    if (found.day) setDay(found.day as DayKey);
+    if (found.period) setPeriod(found.period as PeriodKey);
+  });
 
   const providers = useMemo(
     () => [...new Set(plan.courses.map((course) => course.provider))].sort((a, b) => a.localeCompare(b, "th")),
@@ -32,15 +46,17 @@ export function AvailabilityEditor({ payload }: { payload: PlanPayload }) {
 
   const rows = useMemo(() => {
     const needle = deferredSearch.trim().toLowerCase();
+    const providerNeedle = deferredProvider.trim().toLowerCase();
     return plan.courses.filter((course) => {
-      if (provider && course.provider !== provider) return false;
+      if (providerNeedle && !course.provider.toLowerCase().includes(providerNeedle)) return false;
+      if (!matchesSlotFilter(course.availability, day, period)) return false;
       if (!needle) return true;
       return [course.title, course.courseCode, course.provider, course.instructor]
         .join(" ")
         .toLowerCase()
         .includes(needle);
     });
-  }, [plan.courses, deferredSearch, provider]);
+  }, [plan.courses, deferredSearch, deferredProvider, day, period]);
 
   const toggleSlot = (courseId: string, slotId: SlotId) => {
     const course = plan.courses.find((item) => item.id === courseId);
@@ -53,11 +69,6 @@ export function AvailabilityEditor({ payload }: { payload: PlanPayload }) {
       `${course.title}: ${course.availability.includes(slotId) ? "เอา" : "เพิ่ม"}${slotLabel(slotId)}`,
       plan.undo,
     );
-  };
-
-  const clearFilters = () => {
-    setSearch("");
-    setProvider("");
   };
 
   return (
@@ -104,23 +115,37 @@ export function AvailabilityEditor({ payload }: { payload: PlanPayload }) {
           </label>
           <label>
             บริษัท
-            <select value={provider} onChange={(event) => setProvider(event.target.value)}>
-              <option value="">ทั้งหมด</option>
-              {providers.map((name) => <option key={name} value={name}>{name}</option>)}
-            </select>
+            {/* Typed, not picked: a real term brings hundreds of companies and a
+                select with hundreds of options is a scroll, not a choice. */}
+            <input
+              type="search"
+              list="course-providers"
+              value={provider}
+              placeholder="พิมพ์ชื่อบริษัท"
+              onChange={(event) => setProvider(event.target.value)}
+            />
+            <datalist id="course-providers">
+              {providers.map((name) => <option key={name} value={name} />)}
+            </datalist>
           </label>
+          <SlotFilters day={day} period={period} onDay={setDay} onPeriod={setPeriod} />
         </div>
       </section>
+
+      <p className="availability-legend">
+        <span className="availability-slot is-on" aria-hidden="true">✓</span>
+        <span>บริษัทแจ้งว่าสอนคาบนี้ได้</span>
+        <span className="availability-slot is-used" aria-hidden="true">●</span>
+        <span>สะดวก และตอนนี้วิชานี้ถูกจัดลงคาบนี้แล้ว</span>
+        <span className="availability-slot" aria-hidden="true" />
+        <span>ไม่สะดวก</span>
+      </p>
 
       <ResultAnnouncer message={`พบ ${rows.length} วิชา`} />
 
       {rows.length === 0 ? (
         <section className="panel">
-          <EmptyResult
-            message="ไม่พบวิชาที่ตรงกับตัวกรอง"
-            hasFilters={Boolean(search || provider)}
-            onClear={clearFilters}
-          />
+          <EmptyResult message="ไม่พบวิชาที่ตรงกับตัวกรอง" hasFilters={Boolean(search || provider || day || period)} />
         </section>
       ) : (
         <div className="course-availability-list">

@@ -21,14 +21,21 @@ if ((bare.match(/{/g) || []).length !== (bare.match(/}/g) || []).length) {
   failures.push({ line: 0, rule: "unbalanced-braces", detail: "{ and } counts differ" });
 }
 
-// 2. A selector naming the same class twice matches nothing. This is what a
-//    regex that deletes half of `.a.b { ... }` leaves behind, and it silenced
-//    two layout rules for a full release.
+// 2. One *compound* naming the same class twice (`.a.a`) matches nothing extra.
+//    This is what a regex that deletes half of `.a.b { ... }` leaves behind, and
+//    it silenced two layout rules for a full release.
+//
+//    Split on combinators first. The earlier version tested the whole selector,
+//    which made `.matrix-chip + .matrix-chip` — the ordinary way to space
+//    repeated siblings — indistinguishable from the bug. A check that fires on
+//    correct CSS gets edited around, so it now looks only where the bug lives.
 for (const m of bare.matchAll(/(^|[};])\s*([^{};@][^{}]*?)\s*{/g)) {
   for (const part of m[2].split(",")) {
-    const classes = part.match(/\.[A-Za-z0-9_-]+/g) || [];
-    if (classes.length !== new Set(classes).size) {
-      fail(m.index, "repeated-class-in-selector", part.trim().slice(0, 80));
+    for (const compound of part.split(/[\s>+~]+/).filter(Boolean)) {
+      const classes = compound.match(/\.[A-Za-z0-9_-]+/g) || [];
+      if (classes.length !== new Set(classes).size) {
+        fail(m.index, "repeated-class-in-compound", compound.trim().slice(0, 80));
+      }
     }
   }
 }
