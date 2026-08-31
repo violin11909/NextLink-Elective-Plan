@@ -1,94 +1,29 @@
 "use client";
 
-import { useDeferredValue, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ConflictPanel } from "@/components/conflict-panel";
-import { EmptyResult } from "@/components/empty-result";
-import { FilterSummary } from "@/components/filter-summary";
-import { Pager } from "@/components/pager";
 import { PlanMatrix } from "@/components/plan-matrix";
 import { PlanShell } from "@/components/plan-shell";
 import { PriorityKpi } from "@/components/priority-kpi";
 import { QueueFilterGroup } from "@/components/queue-filter";
-import { ResultAnnouncer } from "@/components/result-announcer";
-import { SlotFilters, matchesSlotFilter } from "@/components/slot-filters";
 import { StatusToast, useStatusToast } from "@/components/status-toast";
 import { BLOCKER_LABELS } from "@/lib/blocker-labels.ts";
 import { formatNumber } from "@/lib/format";
 import type { QueueKind } from "@/lib/queue";
-import { accentFor, buildRoomAccents } from "@/lib/room-colors.ts";
-import { ALL_SLOTS, DAY_LABELS, PERIODS, slotLabel, type DayKey, type PeriodKey } from "@/lib/slots.ts";
+import { ALL_SLOTS, slotLabel } from "@/lib/slots.ts";
 import type { PlanPayload, Suggestion } from "@/lib/plan-types.ts";
 import { usePlanState } from "@/lib/use-plan-state";
-import { useUrlFilters } from "@/lib/use-url-filters";
-
-type PlacementFilter = "all" | "placed" | "unplaced";
-
-/** Short enough that the board above stays on screen while the list is read. */
-const COURSE_PAGE_SIZE = 10;
 
 export function PlanOverview({ payload }: { payload: PlanPayload }) {
   const plan = usePlanState(payload);
+  const router = useRouter();
   const { toast, show, dismiss, holdTimer, resumeTimer } = useStatusToast();
-
-  const [search, setSearch] = useState("");
-  const [provider, setProvider] = useState("");
-  const [category, setCategory] = useState("");
-  const [day, setDay] = useState<DayKey | "">("");
-  const [period, setPeriod] = useState<PeriodKey | "">("");
-  const [placement, setPlacement] = useState<PlacementFilter>("all");
   const [queue, setQueue] = useState<QueueKind | "all">("all");
-  const [page, setPage] = useState(1);
-  const deferredSearch = useDeferredValue(search);
-  const deferredProvider = useDeferredValue(provider);
 
-  useUrlFilters(
-    { q: search, provider, category, day, period, placement: placement === "all" ? "" : placement },
-    (found) => {
-      if (found.q) setSearch(found.q);
-      if (found.provider) setProvider(found.provider);
-      if (found.category) setCategory(found.category);
-      if (found.day) setDay(found.day as DayKey);
-      if (found.period) setPeriod(found.period as PeriodKey);
-      if (found.placement === "placed" || found.placement === "unplaced") setPlacement(found.placement);
-    },
-  );
-
-  const accents = useMemo(() => buildRoomAccents(plan.rooms), [plan.rooms]);
   const roomsById = useMemo(() => new Map(plan.rooms.map((room) => [room.id, room])), [plan.rooms]);
   const coursesById = useMemo(() => new Map(plan.courses.map((course) => [course.id, course])), [plan.courses]);
-
-  const providers = useMemo(
-    () => [...new Set(plan.courses.map((course) => course.provider))].sort((a, b) => a.localeCompare(b, "th")),
-    [plan.courses],
-  );
-  const categories = useMemo(
-    () => [...new Set(plan.courses.map((course) => course.category))].sort((a, b) => a.localeCompare(b, "th")),
-    [plan.courses],
-  );
-
-  const rows = useMemo(() => {
-    const needle = deferredSearch.trim().toLowerCase();
-    const providerNeedle = deferredProvider.trim().toLowerCase();
-    return plan.courses
-      .map((course) => ({ course, placed: plan.assignments.filter((item) => item.courseId === course.id) }))
-      .filter(({ course, placed }) => {
-        if (providerNeedle && !course.provider.toLowerCase().includes(providerNeedle)) return false;
-        if (category && course.category !== category) return false;
-        if (!matchesSlotFilter(course.availability, day, period)) return false;
-        if (placement === "placed" && placed.length < course.sessionsPerWeek) return false;
-        if (placement === "unplaced" && placed.length >= course.sessionsPerWeek) return false;
-        if (!needle) return true;
-        return [course.title, course.courseCode, course.provider, course.instructor, course.category]
-          .join(" ")
-          .toLowerCase()
-          .includes(needle);
-      });
-  }, [plan.courses, plan.assignments, deferredSearch, deferredProvider, category, day, period, placement]);
-
-  const pageCount = Math.max(1, Math.ceil(rows.length / COURSE_PAGE_SIZE));
-  const safePage = Math.min(page, pageCount);
-  const visible = rows.slice((safePage - 1) * COURSE_PAGE_SIZE, safePage * COURSE_PAGE_SIZE);
 
   const totalSessions = plan.courses.reduce((sum, course) => sum + course.sessionsPerWeek, 0);
   const lockedCount = plan.assignments.filter((item) => item.locked).length;
@@ -116,7 +51,20 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
       show(`ปรับจำนวนที่รับเป็น ${suggestion.seats} คนแล้ว`, plan.undo);
       return;
     }
-    show("ต้องแก้ที่หน้าวิชาและช่วงที่สะดวก หรือปลดการกันห้องในหน้าห้องเรียน");
+    if (suggestion.kind === "ASK_MORE_AVAILABILITY") {
+      // The suggestion is an action, not a note: getting more periods out of a
+      // company means editing that company's course, so the button goes there
+      // with the course and the company already filled in.
+      const course = coursesById.get(suggestion.courseId);
+      const params = new URLSearchParams();
+      if (course) {
+        params.set("q", course.title);
+        params.set("provider", course.provider);
+      }
+      router.push(`/courses?${params.toString()}`);
+      return;
+    }
+    show("ต้องปลดการกันห้องในหน้าห้องเรียนก่อน");
   };
 
   const runPlan = () => {
@@ -127,35 +75,6 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
         : `จัดตารางครบทั้ง ${formatNumber(result.assignments.length)} คาบแล้ว`,
       plan.undo,
     );
-  };
-
-  const activeFilters = [
-    search ? { label: "ค้นหา", value: search, onClear: () => setSearch("") } : null,
-    provider ? { label: "บริษัท", value: provider, onClear: () => setProvider("") } : null,
-    category ? { label: "หมวด", value: category, onClear: () => setCategory("") } : null,
-    day || period
-      ? {
-          label: "ช่วงที่สะดวก",
-          value: [day ? DAY_LABELS[day] : "", period ? PERIODS[period].label : ""].filter(Boolean).join(" "),
-          onClear: () => { setDay(""); setPeriod(""); },
-        }
-      : null,
-    placement !== "all"
-      ? {
-          label: "สถานะ",
-          value: placement === "placed" ? "จัดแล้ว" : "ยังไม่ได้จัด",
-          onClear: () => setPlacement("all"),
-        }
-      : null,
-  ].filter((item): item is NonNullable<typeof item> => item !== null);
-
-  const clearFilters = () => {
-    setSearch("");
-    setProvider("");
-    setCategory("");
-    setDay("");
-    setPeriod("");
-    setPlacement("all");
   };
 
   return (
@@ -263,6 +182,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
             <h3>ตารางห้องเรียนทั้งสัปดาห์</h3>
           </div>
           <div className="table-heading-actions">
+            <Link className="text-button" href="/courses/list">ดูรายวิชาทั้งหมด</Link>
             <button
               className="secondary-button"
               type="button"
@@ -289,166 +209,6 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
             show(`${title} ลง${slotLabel(slotId)}แล้ว แต่ ${blockers.map((code) => BLOCKER_LABELS[code]).join(" · ")}`, plan.undo)
           }
         />
-      </section>
-
-      <section className="panel table-panel">
-        <div className="panel-heading table-heading">
-          <div>
-            <p className="section-kicker">รายวิชา</p>
-            <h3>ช่วงที่บริษัทสะดวก และคาบที่ได้จริง</h3>
-          </div>
-          <Link className="text-button" href="/courses">แก้ช่วงที่สะดวก</Link>
-        </div>
-
-        <div className="filters">
-          <label>
-            ค้นหาวิชา หรือผู้สอน
-            <input
-              type="search"
-              value={search}
-              placeholder="เช่น Cloud, อาจารย์ธนา"
-              onChange={(event) => { setSearch(event.target.value); setPage(1); }}
-            />
-          </label>
-          <label>
-            บริษัท
-            {/* A list, not a dropdown: a real term has hundreds of companies, and
-                a select with hundreds of options is a scroll, not a choice. */}
-            <input
-              type="search"
-              list="overview-providers"
-              value={provider}
-              placeholder="พิมพ์ชื่อบริษัท"
-              onChange={(event) => { setProvider(event.target.value); setPage(1); }}
-            />
-            <datalist id="overview-providers">
-              {providers.map((name) => <option key={name} value={name} />)}
-            </datalist>
-          </label>
-          <label>
-            หมวด
-            <select value={category} onChange={(event) => { setCategory(event.target.value); setPage(1); }}>
-              <option value="">ทั้งหมด</option>
-              {categories.map((name) => <option key={name} value={name}>{name}</option>)}
-            </select>
-          </label>
-          <label>
-            สถานะการจัด
-            <select
-              value={placement}
-              onChange={(event) => { setPlacement(event.target.value as PlacementFilter); setPage(1); }}
-            >
-              <option value="all">ทั้งหมด</option>
-              <option value="placed">จัดครบแล้ว</option>
-              <option value="unplaced">ยังจัดไม่ครบ</option>
-            </select>
-          </label>
-          <SlotFilters
-            day={day}
-            period={period}
-            onDay={(next) => { setDay(next); setPage(1); }}
-            onPeriod={(next) => { setPeriod(next); setPage(1); }}
-          />
-        </div>
-        <FilterSummary summary={`พบ ${formatNumber(rows.length)} วิชา`} filters={activeFilters} />
-
-        <ResultAnnouncer message={`พบ ${rows.length} วิชา`} />
-        {rows.length === 0 ? (
-          <EmptyResult message="ไม่พบวิชาที่ตรงกับตัวกรอง" hasFilters={activeFilters.length > 0} onClear={clearFilters} />
-        ) : (
-          <>
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col">วิชา</th>
-                    <th scope="col">บริษัท</th>
-                    <th scope="col">ผู้สอน</th>
-                    <th scope="col">ช่วงที่สะดวก</th>
-                    <th scope="col">คาบที่ได้</th>
-                    <th scope="col">ห้อง</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {visible.map(({ course, placed }) => (
-                    <tr key={course.id}>
-                      <td>
-                        {/* Both the title and the company lead to the same page,
-                            filtered to what was clicked — from a row here the
-                            next question is always "what else can they do", and
-                            the answer lives on the availability page. */}
-                        <Link className="course-link" href={`/courses?q=${encodeURIComponent(course.title)}`}>
-                          <strong>{course.title}</strong>
-                          <span className="course-code">{course.courseCode} · {course.category}</span>
-                        </Link>
-                      </td>
-                      <td>
-                        {/* Straight to this company's courses with the filter
-                            already applied — the next thing anyone does after
-                            spotting a company here is look at its other slots. */}
-                        <Link className="provider-link" href={`/courses?provider=${encodeURIComponent(course.provider)}`}>
-                          {course.provider}
-                        </Link>
-                      </td>
-                      <td><span className="schedule-text">{course.instructor}</span></td>
-                      <td>
-                        <span className="schedule-text">
-                          {course.availability.map(slotLabel).join(" · ") || "ยังไม่ได้แจ้ง"}
-                        </span>
-                      </td>
-                      <td>
-                        {placed.length === 0 ? (
-                          <span className="status-pill tone-orange">ยังไม่ได้จัด</span>
-                        ) : (
-                          <span className="status-stack">
-                            {placed.map((item) => (
-                              <span className={`status-pill ${item.locked ? "tone-green" : "tone-blue"}`} key={item.id}>
-                                {slotLabel(item.slotId)}{item.locked ? " · ยืนยันแล้ว" : ""}
-                              </span>
-                            ))}
-                          </span>
-                        )}
-                        {placed.length < course.sessionsPerWeek ? (
-                          <small>ต้องได้ {course.sessionsPerWeek} คาบ/สัปดาห์</small>
-                        ) : null}
-                      </td>
-                      <td>
-                        {course.deliveryMode === "ONLINE" ? (
-                          <span className="room-tag" style={{ ["--room-accent" as string]: accentFor(accents, null) }}>
-                            ออนไลน์
-                          </span>
-                        ) : placed.length === 0 ? (
-                          <span className="schedule-text">—</span>
-                        ) : (
-                          <span className="status-stack">
-                            {placed.map((item) => (
-                              <span
-                                className="room-tag"
-                                key={item.id}
-                                style={{ ["--room-accent" as string]: accentFor(accents, item.roomId) }}
-                              >
-                                {item.roomId ? roomsById.get(item.roomId)?.name ?? item.roomId : "ออนไลน์"}
-                              </span>
-                            ))}
-                          </span>
-                        )}
-                        <small>รับ {formatNumber(course.capacity)} คน</small>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <Pager
-              page={safePage}
-              pageCount={pageCount}
-              total={rows.length}
-              unit="วิชา"
-              pageSize={COURSE_PAGE_SIZE}
-              onChange={setPage}
-            />
-          </>
-        )}
       </section>
 
       <StatusToast toast={toast} onDismiss={dismiss} onHold={holdTimer} onResume={resumeTimer} />

@@ -112,6 +112,9 @@ from the transition keeps it on the compositor instead of repainting. */
 .control-heading h3, .panel-heading h3 { margin: 4px 0 0; font-size: 17px; letter-spacing: -.02em; }
 .text-button { padding: 0; border: 0; color: var(--blue); background: transparent; font-size: 14px; font-weight: 750; }.text-button:disabled { cursor: not-allowed; color: #858e9e; }
 .filters { display: grid; grid-template-columns: minmax(240px, 1.6fr) repeat(3, minmax(160px, 1fr)); gap: 13px; }
+/* One search box doing the work of four, so it earns the width — and the day
+   and period pickers hold at most seven short options each. */
+.filters.filters-list { grid-template-columns: minmax(280px, 2.4fr) minmax(150px, 1fr) minmax(118px, .62fr) minmax(118px, .62fr); }
 .filters label { display: grid; gap: 7px; color: var(--muted); font-size: 13px; font-weight: 700; }
 .filters input, .filters select { width: 100%; min-height: var(--tap-min); padding: 0 12px; border: 1px solid #dce2ec; border-radius: 10px; outline: 0; color: var(--ink); background: #fbfcfe; }
 .filters input:focus, .filters select:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); }
@@ -232,6 +235,16 @@ the thing overflowing. The last fields and the save button were unreachable. */
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 1050px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } .filters { grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(145px, 1fr)); } }
+/* Below this the columns would be narrower than a Thai course title, so the
+   board goes back to scrolling sideways inside its own box rather than
+   squeezing ten columns into a laptop screen. */
+@media (max-width: 1100px) {
+  .matrix-scroll { overflow-x: auto; }
+  .matrix { width: max-content; min-width: 100%; table-layout: auto; }
+  .matrix-room, .matrix-cell { min-width: 150px; }
+  .matrix-corner, .matrix-slot { width: 88px; min-width: 88px; }
+}
+
 @media (max-width: 760px) {
   :root { --page-max: 680px; --page-width: min(var(--page-max), 94%); --page-gutter: max(3%, calc((100% - var(--page-max)) / 2)); }
     
@@ -359,7 +372,7 @@ panel exists to avoid. */
 .conflict-copy small { color: var(--muted); font-size: 12px; line-height: 1.5; }
 .conflict-slot-list { display: grid; gap: 4px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted-2); font-size: 12px; line-height: 1.5; }
 .conflict-slot-name { margin-right: 7px; color: #4a5766; font-weight: 800; }
-.conflict-actions { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
+.conflict-side { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
 
 .room-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 13px; }
 .room-card { display: grid; align-content: start; gap: 7px; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: #fff; text-decoration: none; color: inherit; transition: transform .15s, border-color .15s; }
@@ -449,13 +462,22 @@ out — but it should never happen without the reader seeing it. */
    .matrix-scroll grow past the panel instead of scrolling inside it, and the
    whole document ended up 2000px wide on a phone. */
 .matrix-block { display: grid; min-width: 0; gap: 13px; }
-/* The tray sits with the board, not in the follow-up list further up the page:
-   a course being dragged has to start next to where it is going. */
-.matrix-tray { display: grid; gap: 9px; padding: 13px; border: 1px solid #e7ebf2; border-radius: 13px; background: #fbfcfe; }
-.matrix-tray-head { display: flex; align-items: center; gap: 9px; }
-.matrix-tray-head strong { color: #26324a; font-size: 14px; }
 .matrix-tray-empty { margin: 0; color: var(--muted); font-size: 13px; }
-.matrix-tray-list { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+/* A button that stays put while the page moves, because the empty period you
+   are hunting for can be anywhere in a board this tall. */
+.picker-fab { position: fixed; right: 22px; bottom: 22px; z-index: 55; display: inline-flex; align-items: center; gap: 9px; min-height: var(--tap-min); padding: 0 18px; border: 0; border-radius: 999px; color: #fff; background: var(--navy); box-shadow: 0 14px 34px rgba(14, 27, 53, .28); font-size: 14px; font-weight: 750; }
+.picker-fab:hover { background: #1b2b4d; }
+.picker-fab-count { padding: 2px 9px; border-radius: 999px; color: #ffd9a8; background: rgba(255,255,255,.14); font-size: 12px; }
+/* Fixed, not sticky: sticky would scroll away with whatever it was declared in,
+   and the whole point is that the list stays reachable from any row. */
+.picker-bar { position: fixed; top: 0; left: 0; right: 0; z-index: 60; display: grid; gap: 10px; padding: 13px 22px 15px; border-bottom: 1px solid #d9e0ec; background: rgba(252,253,255,.97); box-shadow: 0 12px 34px rgba(14, 27, 53, .16); backdrop-filter: blur(6px); }
+.picker-bar-head { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+.picker-bar-head strong { color: #26324a; font-size: 14px; }
+.picker-bar-hint { flex: 1 1 auto; color: var(--muted); font-size: 12px; }
+.picker-bar-close { min-height: 32px; padding: 0 14px; border: 1px solid #dce2ec; border-radius: 999px; color: #49628e; background: #fff; font-size: 13px; font-weight: 750; }
+.picker-bar-close:hover { border-color: #9bb7ed; color: var(--blue); }
+.picker-list { display: flex; overflow-x: auto; flex-wrap: nowrap; gap: 8px; margin: 0; padding: 0 0 4px; list-style: none; }
+.picker-list > li { flex: 0 0 auto; }
 .tray-chip { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 8px; max-width: 340px; padding: 8px 9px; border: 1px solid #e0d5b8; border-radius: 10px; background: #fffdf6; cursor: grab; }
 .tray-chip.is-held { border-color: #3b70dc; background: #edf3ff; }
 .tray-chip-copy { display: grid; min-width: 0; gap: 2px; }
@@ -469,19 +491,29 @@ out — but it should never happen without the reader seeing it. */
    containing block was the page itself, so overflow:auto never clipped them —
    the labels of cells 2000px to the right stretched the document and the whole
    page scrolled sideways on every screen size. */
-.matrix-scroll { position: relative; min-width: 0; overflow: auto; max-height: 74vh; border: 1px solid var(--line); border-radius: 13px; overscroll-behavior: contain; }
-.matrix { width: max-content; min-width: 100%; border-collapse: separate; border-spacing: 0; }
+.matrix-scroll { position: relative; min-width: 0; border: 1px solid var(--line); border-radius: 13px; }
+/* Fixed layout, full width: the board fits the page and every column takes an
+   equal share, wrapping its text instead of demanding more room. It used to be
+   max-content inside a scrolling box, which meant two scrollbars — one for the
+   week, one for the page — and neither showed the whole week. */
+.matrix { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+/* The shared table header style is built for a wide reference table: nowrap,
+   uppercase, wide tracking. On a fixed-layout board that meant the room names
+   were cut off mid-word instead of wrapping onto a second line. */
+.matrix th { letter-spacing: 0; text-transform: none; white-space: normal; }
 .matrix th, .matrix td { border-bottom: 1px solid #edf0f5; border-right: 1px solid #edf0f5; }
-.matrix-corner { position: sticky; top: 0; left: 0; z-index: 4; width: 104px; min-width: 104px; padding: 9px 11px; color: var(--muted); background: #f4f6fa; font-size: 12px; text-align: left; }
-.matrix-room { position: sticky; top: 0; z-index: 3; min-width: 168px; padding: 9px 11px; color: #3d4b65; background: #f4f6fa; font-size: 12px; font-weight: 800; text-align: left; vertical-align: middle; }
+.matrix-corner { position: sticky; top: 0; left: 0; z-index: 4; width: 92px; padding: 9px 10px; color: var(--muted); background: #f4f6fa; font-size: 12px; text-align: left; }
+.matrix-room { position: sticky; top: 0; z-index: 3; padding: 9px 10px; color: #3d4b65; background: #f4f6fa; font-size: 12px; font-weight: 800; line-height: 1.4; text-align: left; vertical-align: top; }
 /* Colour is never the only cue: the room's name is beside every swatch, here
    and on each card. That is what lets the palette stay at four hues. */
 .room-swatch { display: inline-block; width: 9px; height: 9px; margin-right: 6px; border-radius: 999px; vertical-align: baseline; }
 .matrix-day th { position: sticky; left: 0; z-index: 2; padding: 6px 11px; color: #2b3750; background: #eef1f7; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-align: left; }
-.matrix-slot { position: sticky; left: 0; z-index: 2; display: table-cell; padding: 8px 11px; background: #fbfcfe; text-align: left; vertical-align: top; }
+.matrix-slot { position: sticky; left: 0; z-index: 2; display: table-cell; width: 92px; padding: 8px 10px; background: #fbfcfe; text-align: left; vertical-align: top; }
 .matrix-slot strong { display: block; color: #3d4b65; font-size: 13px; }
-.matrix-slot small { color: var(--muted-2); font-size: 12px; }
-.matrix-cell { min-width: 168px; padding: 6px; vertical-align: top; background: #fff; }
+/* Start and end on their own lines. "13:00–16:00" does not break anywhere, so
+   in a 92px column it either overflowed or forced the column wider. */
+.matrix-slot small { display: block; color: var(--muted-2); font-size: 11px; line-height: 1.45; }
+.matrix-cell { padding: 6px; vertical-align: top; background: #fff; }
 .matrix-cell.is-blocked { background: repeating-linear-gradient(135deg, #f4f6fa, #f4f6fa 6px, #eef1f6 6px, #eef1f6 12px); }
 /* Live answer to "can this go here", given while the cursor is still moving —
    the check has to arrive before the drop, not after it. */
@@ -494,8 +526,9 @@ out — but it should never happen without the reader seeing it. */
 .matrix-chip.is-conflict { border-color: #e7b1b7; background: #fff6f7; }
 .matrix-chip.is-held { border-color: #3b70dc; background: #edf3ff; }
 .matrix-chip-copy { display: grid; min-width: 0; gap: 2px; }
-.matrix-chip-copy strong { display: -webkit-box; overflow: hidden; color: #26324a; font-size: 13px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-.matrix-chip-copy small { overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+.matrix-chip-copy strong { display: -webkit-box; overflow: hidden; color: #26324a; font-size: 12px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.matrix-chip-copy small { display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 11px; line-height: 1.35; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.matrix-chip .chip-action { width: 23px; height: 23px; font-size: 12px; }
 .matrix-drop { display: grid; place-items: center; width: 100%; min-height: 32px; margin-top: 6px; border: 1px dashed #c9d3e3; border-radius: 8px; color: #5c6a83; background: #f7f9fc; font-size: 12px; font-weight: 700; }
 .matrix-drop.is-drop-ok { border-style: solid; border-color: #3aa06f; color: #0e6b4f; background: #eaf8f1; }
 /* Left plain on purpose. Painting all 180 "put it here" buttons orange because
@@ -517,11 +550,9 @@ out — but it should never happen without the reader seeing it. */
 .availability-legend .availability-slot { width: 26px; min-height: 26px; pointer-events: none; }
 
 @media (max-width: 760px) {
-  /* The board keeps its scroll on a phone. Ten room columns cannot fold into
-         one without losing the comparison the board exists to make, and unlike the
-         per-room grid there is no day-shaped list that says the same thing. */
-      .matrix-scroll { max-height: 62vh; }
-      .matrix-room, .matrix-cell { min-width: 148px; }
-      .matrix-corner, .matrix-slot { width: 86px; min-width: 86px; }
-      .tray-chip { max-width: none; }
+  .filters.filters-list { grid-template-columns: 1fr; }
+  .picker-bar { padding: 11px 16px 13px; }
+  .picker-fab { right: 14px; bottom: 14px; }
+  .tray-chip { max-width: none; }
+  .conflict-side { justify-content: flex-start; }
 }

@@ -55,9 +55,13 @@ export function ConflictPanel({
                   ))}
                 </ul>
               ) : null}
-              {gap && onSuggestion ? (
-                <span className="conflict-actions">
-                  {gap.reason.suggestions.map((suggestion) => (
+            </div>
+            {/* Actions and the urgency label share the right column, level with
+                the heading. Underneath the text the buttons pushed every row
+                taller while the right third of a one-line row sat empty. */}
+            <div className="conflict-side">
+              {gap && onSuggestion
+                ? gap.reason.suggestions.map((suggestion) => (
                     <button
                       className="selection-chip"
                       key={suggestion.label}
@@ -66,13 +70,12 @@ export function ConflictPanel({
                     >
                       {suggestion.label}
                     </button>
-                  ))}
-                </span>
-              ) : null}
+                  ))
+                : null}
+              <span className={`follow-up-severity ${QUEUE_META[conflict.severity].className}`}>
+                {QUEUE_META[conflict.severity].label}
+              </span>
             </div>
-            <span className={`follow-up-severity ${QUEUE_META[conflict.severity].className}`}>
-              {QUEUE_META[conflict.severity].label}
-            </span>
           </li>
         );
       })}

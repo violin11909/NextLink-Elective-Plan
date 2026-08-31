@@ -12,7 +12,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 
 /** Every top-level page component, in nav order. */
-const PAGES = ["plan-overview", "room-list", "room-schedule", "availability-editor"];
+const PAGES = ["plan-overview", "course-list", "room-list", "room-schedule", "availability-editor"];
 /** The page that leads with the KPI row and the follow-up queue. */
 const OVERVIEW = "plan-overview";
 /**

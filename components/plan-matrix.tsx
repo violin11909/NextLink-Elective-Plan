@@ -50,6 +50,7 @@ export function PlanMatrix({
 }) {
   const [held, setHeld] = useState<Held | null>(null);
   const [hover, setHover] = useState<string | null>(null);
+  const [pickerOpen, setPickerOpen] = useState(false);
 
   const accents = useMemo(() => buildRoomAccents(rooms), [rooms]);
   const coursesById = useMemo(() => new Map(courses.map((course) => [course.id, course])), [courses]);
@@ -113,55 +114,80 @@ export function PlanMatrix({
 
   return (
     <div className="matrix-block">
-      <div className="matrix-tray" role="group" aria-label="วิชาที่ยังไม่ได้จัด">
-        <div className="matrix-tray-head">
-          <strong>ยังไม่ได้จัด</strong>
-          <span className="count-chip">{formatNumber(unplaced.length)} วิชา</span>
-        </div>
-        {unplaced.length === 0 ? (
-          <p className="matrix-tray-empty">จัดครบทุกวิชาแล้ว</p>
-        ) : (
-          <ul className="matrix-tray-list">
-            {unplaced.map(({ course, missing }) => {
-              const isHeld = held?.kind === "course" && held.id === course.id;
-              return (
-                <li key={course.id}>
-                  <div
-                    className={`tray-chip${isHeld ? " is-held" : ""}`}
-                    draggable
-                    onDragStart={(event) => {
-                      const payload: Held = { kind: "course", id: course.id };
-                      event.dataTransfer.setData("text/plain", JSON.stringify(payload));
-                      event.dataTransfer.effectAllowed = "move";
-                      setHeld(payload);
-                    }}
-                    onDragEnd={() => { setHeld(null); setHover(null); }}
-                  >
-                    <span className="tray-chip-copy">
-                      <strong>{course.title}</strong>
-                      <small>
-                        {course.provider} · ต้องได้ {formatNumber(missing)} คาบ ·{" "}
-                        {course.availability.map(slotLabel).join(" / ") || "ยังไม่แจ้งช่วงที่สะดวก"}
-                      </small>
-                    </span>
-                    <button
-                      className={`chip-action${isHeld ? " is-on" : ""}`}
-                      type="button"
-                      aria-pressed={isHeld}
-                      onClick={() => setHeld(isHeld ? null : { kind: "course", id: course.id })}
+      {/*
+       * The unplaced courses live in a layer that follows the viewport rather
+       * than a strip pinned above the board. The board is now as tall as the
+       * week, so the empty period you are looking for is usually a long way
+       * from wherever the list would have sat — and a course you cannot see is
+       * a course you cannot drag.
+       */}
+      {unplaced.length > 0 && !pickerOpen ? (
+        <button className="picker-fab" type="button" onClick={() => setPickerOpen(true)}>
+          <span aria-hidden="true">＋</span>
+          เพิ่มวิชาเข้าตาราง
+          <span className="picker-fab-count">{formatNumber(unplaced.length)}</span>
+        </button>
+      ) : null}
+
+      {pickerOpen ? (
+        <div className="picker-bar" role="group" aria-label="วิชาที่ยังไม่ได้จัด">
+          <div className="picker-bar-head">
+            <strong>ยังไม่ได้จัด</strong>
+            <span className="count-chip">{formatNumber(unplaced.length)} วิชา</span>
+            <span className="picker-bar-hint">ลากลงช่องว่างในตาราง หรือกด ⤓ แล้วเลือกช่อง</span>
+            <button
+              className="picker-bar-close"
+              type="button"
+              onClick={() => { setPickerOpen(false); setHeld(null); }}
+            >
+              พับเก็บ
+            </button>
+          </div>
+          {unplaced.length === 0 ? (
+            <p className="matrix-tray-empty">จัดครบทุกวิชาแล้ว</p>
+          ) : (
+            <ul className="picker-list">
+              {unplaced.map(({ course, missing }) => {
+                const isHeld = held?.kind === "course" && held.id === course.id;
+                return (
+                  <li key={course.id}>
+                    <div
+                      className={`tray-chip${isHeld ? " is-held" : ""}`}
+                      draggable
+                      onDragStart={(event) => {
+                        const payload: Held = { kind: "course", id: course.id };
+                        event.dataTransfer.setData("text/plain", JSON.stringify(payload));
+                        event.dataTransfer.effectAllowed = "move";
+                        setHeld(payload);
+                      }}
+                      onDragEnd={() => { setHeld(null); setHover(null); }}
                     >
-                      <span aria-hidden="true">⤓</span>
-                      <span className="sr-only">
-                        {isHeld ? `ยกเลิกการเลือก ${course.title}` : `เลือก ${course.title} เพื่อวางลงตาราง`}
+                      <span className="tray-chip-copy">
+                        <strong>{course.title}</strong>
+                        <small>
+                          {course.provider} · ต้องได้ {formatNumber(missing)} คาบ ·{" "}
+                          {course.availability.map(slotLabel).join(" / ") || "ยังไม่แจ้งช่วงที่สะดวก"}
+                        </small>
                       </span>
-                    </button>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
+                      <button
+                        className={`chip-action${isHeld ? " is-on" : ""}`}
+                        type="button"
+                        aria-pressed={isHeld}
+                        onClick={() => setHeld(isHeld ? null : { kind: "course", id: course.id })}
+                      >
+                        <span aria-hidden="true">⤓</span>
+                        <span className="sr-only">
+                          {isHeld ? `ยกเลิกการเลือก ${course.title}` : `เลือก ${course.title} เพื่อวางลงตาราง`}
+                        </span>
+                      </button>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      ) : null}
 
       {heldCourse ? (
         <p className="edit-mode-note matrix-holding">
@@ -196,7 +222,8 @@ export function PlanMatrix({
                     <tr key={slotId}>
                       <th className="matrix-slot" scope="row">
                         <strong>{PERIODS[period].label}</strong>
-                        <small>{PERIODS[period].start}–{PERIODS[period].end}</small>
+                        <small>{PERIODS[period].start}</small>
+                        <small>–{PERIODS[period].end}</small>
                       </th>
                       {columns.map((column) => {
                         const cellKey = `${slotId}:${column.key}`;
