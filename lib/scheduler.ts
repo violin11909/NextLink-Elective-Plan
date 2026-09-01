@@ -350,10 +350,9 @@ function explain(course: PlanCourse, placed: Assignment[], ctx: Ctx): FailureRea
     });
   }
 
-  push(
-    { kind: "ASK_MORE_AVAILABILITY", courseId: course.id, label: `ขอช่วงเวลาเพิ่มจาก ${course.provider}` },
-    `ask:${course.id}`,
-  );
+  // The company's name is on the row already; repeating it inside the button
+  // made every button a different width for no extra information.
+  push({ kind: "ASK_MORE_AVAILABILITY", courseId: course.id, label: "ขอช่วงเวลาเพิ่ม" }, `ask:${course.id}`);
 
   return { perSlot, suggestions };
 }

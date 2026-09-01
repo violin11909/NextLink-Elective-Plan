@@ -131,7 +131,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           <p className="section-kicker">ภาคต้น ปีการศึกษา 2569</p>
           <h2>วางตารางสอนจากช่วงที่บริษัทสะดวก</h2>
           <p className="intro-copy">
-            แต่ละบริษัทแจ้งช่วงที่สอนได้ไม่เท่ากัน ระบบจะล็อกวิชาที่มีทางเลือกน้อยที่สุดก่อน แล้วปัดวิชาที่ยืดหยุ่นกว่าไปช่วงอื่น
+            {/* แต่ละบริษัทแจ้งช่วงที่สอนได้ไม่เท่ากัน ระบบจะล็อกวิชาที่มีทางเลือกน้อยที่สุดก่อน แล้วปัดวิชาที่ยืดหยุ่นกว่าไปช่วงอื่น */}
           </p>
         </div>
       </div>
@@ -139,11 +139,11 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
       <div className="kpi-grid">
         <div className="kpi-card red">
           <span className="kpi-topline">
-            <span className="kpi-label">ยังไม่ส่งช่วงที่สะดวก</span>
+            <span className="kpi-label">ยังไม่ระบุเวลาสอน</span>
             {awaitingAvailability > 0 ? <span className="kpi-alert-icon" aria-hidden="true">!</span> : null}
           </span>
           <p className="kpi-value">{formatNumber(awaitingAvailability)}</p>
-          <p className="kpi-note">วิชาที่บริษัทยังไม่แจ้งว่าสอนคาบไหนได้ — จัดให้ไม่ได้จนกว่าจะได้คำตอบ</p>
+          {/* <p className="kpi-note">วิชาที่บริษัทยังไม่แจ้งว่าสอนคาบไหนได้ — จัดให้ไม่ได้จนกว่าจะได้คำตอบ</p> */}
         </div>
         <div className="kpi-card blue">
           <span className="kpi-topline">
@@ -156,14 +156,14 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           <span className="kpi-progress">
             <span className="kpi-progress-fill" style={{ width: `${Math.min(placedPercent, 100)}%` }} />
           </span>
-          <p className="kpi-note">นับตามจำนวนคาบที่แต่ละวิชาต้องได้ต่อสัปดาห์</p>
+          {/* <p className="kpi-note">นับตามจำนวนคาบที่แต่ละวิชาต้องได้ต่อสัปดาห์</p> */}
         </div>
         <div className="kpi-card green">
           <span className="kpi-topline">
-            <span className="kpi-label">การ์ดที่ยังมีปัญหา</span>
+            <span className="kpi-label">วิชาที่ยังมีปัญหา</span>
           </span>
           <p className="kpi-value">{formatNumber(flaggedCards)}</p>
-          <p className="kpi-note">การ์ดในตารางที่ขึ้นเตือน — กดดูเหตุผลได้ใต้การ์ดนั้น</p>
+          {/* <p className="kpi-note">การ์ดในตารางที่ขึ้นเตือน — กดดูเหตุผลได้ใต้การ์ดนั้น</p> */}
         </div>
         <div className="kpi-card purple">
           <span className="kpi-topline">
@@ -176,7 +176,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           <span className="kpi-progress">
             <span className="kpi-progress-fill purple" style={{ width: `${Math.min(utilisation, 100)}%` }} />
           </span>
-          <p className="kpi-note">คาบ-ห้องที่ใช้ไป เทียบกับที่ภาคใช้ได้ทันที</p>
+          {/* <p className="kpi-note">คาบ-ห้องที่ใช้ไป เทียบกับที่ภาคใช้ได้ทันที</p> */}
         </div>
         <div className="kpi-card orange">
           <span className="kpi-topline">
@@ -225,11 +225,11 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           <div>
             <p className="section-kicker">ทั้งภาควิชา · จันทร์ถึงเสาร์</p>
             <h3>ตารางห้องเรียนทั้งสัปดาห์</h3>
-            {holding ? (
+            {/* {holding ? (
               <p className="matrix-holding">
                 กำลังวาง <strong>{holding.title}</strong> — ช่องขอบเขียวคือวางได้
               </p>
-            ) : null}
+            ) : null} */}
           </div>
           <div className="table-heading-actions">
             <Link className="text-button" href="/courses/list">ดูรายวิชาทั้งหมด</Link>

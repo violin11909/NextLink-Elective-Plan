@@ -269,7 +269,7 @@ export function PlanMatrix({
                             }}
                           >
                             {blocked ? (
-                              <span className="matrix-blocked" title={blocked.reason}>กันไว้</span>
+                              <span className="matrix-blocked" title={blocked.reason}>สำรองไว้ให้วิชาบังคับ</span>
                             ) : null}
                             {here.map((assignment) => {
                               const course = coursesById.get(assignment.courseId);
@@ -297,10 +297,30 @@ export function PlanMatrix({
                                     <span aria-hidden="true">×</span>
                                     <span className="sr-only">เอา {course.title} ออกจากตาราง</span>
                                   </button>
-                                  <span className="matrix-chip-copy">
+                                  {/*
+                                   * The card body is the handle. Dragging it moves
+                                   * the class; clicking it — or pressing Enter on it
+                                   * — picks the class up so a target period can be
+                                   * chosen. That second path is not decoration: a
+                                   * drag cannot be performed with a keyboard, and
+                                   * this is the main action on the page.
+                                   */}
+                                  <button
+                                    className="matrix-chip-copy"
+                                    type="button"
+                                    disabled={assignment.locked}
+                                    aria-pressed={isHeld}
+                                    title={assignment.locked ? "ปลดล็อกก่อนจึงจะย้ายได้" : "กดเพื่อหยิบขึ้น แล้วเลือกช่องปลายทาง"}
+                                    onClick={() =>
+                                      setHeld(isHeld ? null : { kind: "assignment", id: assignment.id, courseId: course.id })
+                                    }
+                                  >
                                     <strong>{course.title}</strong>
                                     <small>{course.provider}</small>
-                                  </span>
+                                    <span className="sr-only">
+                                      {isHeld ? " — ยกเลิกการย้าย" : " — หยิบขึ้นเพื่อย้ายไปช่องอื่น"}
+                                    </span>
+                                  </button>
                                   <span className="chip-actions">
                                     <button
                                       className={`chip-action${assignment.locked ? " is-on" : ""}`}
@@ -314,20 +334,6 @@ export function PlanMatrix({
                                         {assignment.locked ? `ปลดล็อก ${course.title}` : `ล็อก ${course.title}`}
                                       </span>
                                     </button>
-                                    {assignment.locked ? null : (
-                                      <button
-                                        className={`chip-action${isHeld ? " is-on" : ""}`}
-                                        type="button"
-                                        aria-pressed={isHeld}
-                                        title="ย้ายไปช่องอื่น"
-                                        onClick={() =>
-                                          setHeld(isHeld ? null : { kind: "assignment", id: assignment.id, courseId: course.id })
-                                        }
-                                      >
-                                        <span aria-hidden="true">↔</span>
-                                        <span className="sr-only">ย้าย {course.title} ไปช่องอื่น</span>
-                                      </button>
-                                    )}
                                   </span>
                                 </div>
                               );

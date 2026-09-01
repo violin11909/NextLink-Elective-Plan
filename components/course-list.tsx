@@ -126,7 +126,7 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
             <input
               type="search"
               value={search}
-              placeholder="เช่น Cloud, อาจารย์ธนา, Soft Square, ปัญญาประดิษฐ์"
+              placeholder="พิมพ์ชื่อวิชา, ชื่ออาจารย์, ชื่อบริษัท, หมวดหมู่"
               onChange={(event) => { setSearch(event.target.value); setPage(1); }}
             />
           </label>
@@ -214,12 +214,31 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
                         {placed.length === 0 ? (
                           <span className="status-pill tone-orange">ยังไม่ได้จัด</span>
                         ) : (
-                          <span className="status-stack">
-                            {placed.map((item) => (
-                              <span className={`status-pill ${item.locked ? "tone-green" : "tone-blue"}`} key={item.id}>
-                                {slotLabel(item.slotId)}{item.locked ? " · ยืนยันแล้ว" : ""}
-                              </span>
-                            ))}
+                          /* Same day colours as the column beside it, so the two
+                             can be compared at a glance — which is the whole
+                             reason they sit next to each other. The lock is what
+                             the old green/blue split used to carry; it stays as a
+                             glyph rather than a colour, because colour is now
+                             saying which day. */
+                          <span className="day-chip-list">
+                            {placed.map((item) => {
+                              const colour = DAY_COLORS[parseSlotId(item.slotId).day];
+                              return (
+                                <span
+                                  className={`day-chip${item.locked ? " is-locked" : ""}`}
+                                  key={item.id}
+                                  style={{
+                                    ["--day-ink" as string]: colour.ink,
+                                    ["--day-bg" as string]: colour.bg,
+                                    ["--day-border" as string]: colour.border,
+                                  }}
+                                >
+                                  {item.locked ? <span className="day-chip-lock" aria-hidden="true">🔒</span> : null}
+                                  {slotLabel(item.slotId)}
+                                  {item.locked ? <span className="sr-only"> — ยืนยันแล้ว</span> : null}
+                                </span>
+                              );
+                            })}
                           </span>
                         )}
                         {placed.length < course.sessionsPerWeek ? (

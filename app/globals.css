@@ -362,6 +362,7 @@ panel exists to avoid. */
 .conflict-badge.queue-waiting { color: #8f5410; background: #fff3e5; }
 .conflict-badge.queue-progress { color: #3568c4; background: #edf3ff; }
 .conflict-copy small { color: var(--muted); font-size: 12px; line-height: 1.5; }
+.conflict-provider { color: #4a5766; font-weight: 800; }
 .conflict-slot-list { display: grid; gap: 4px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted-2); font-size: 12px; line-height: 1.5; }
 .conflict-slot-name { margin-right: 7px; color: #4a5766; font-weight: 800; }
 .conflict-side { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
@@ -519,7 +520,9 @@ out — but it should never happen without the reader seeing it. */
    action here you cannot undo by pressing it again. */
 .chip-remove { position: absolute; top: 3px; right: 3px; display: grid; place-items: center; width: 20px; height: 20px; border: 0; border-radius: 6px; color: #97a1b4; background: transparent; font-size: 14px; line-height: 1; }
 .chip-remove:hover { color: #a3313c; background: #fdeef0; }
-.matrix-chip-copy { padding-right: 20px; }
+.matrix-chip-copy { display: grid; gap: 2px; padding: 0 20px 0 0; border: 0; text-align: left; color: inherit; background: transparent; cursor: grab; }
+.matrix-chip-copy:disabled { cursor: default; }
+.matrix-chip-copy[aria-pressed="true"] strong { color: var(--blue); }
 .matrix-chip + .matrix-chip { margin-top: 6px; }
 .matrix-chip.is-locked { border-color: #a8ddc6; background: #f4fcf8; cursor: default; }
 .matrix-chip.is-conflict { border-color: #e7b1b7; background: #fff6f7; }
@@ -541,7 +544,9 @@ out — but it should never happen without the reader seeing it. */
 /* Day colour, on the other hand, is the traditional one — see lib/day-colors.ts
    for why each is restated as ink + wash rather than used raw. */
 .day-chip-list { display: flex; flex-wrap: wrap; gap: 4px; }
-.day-chip { display: inline-flex; align-items: center; padding: 3px 8px; border: 1px solid var(--day-border); border-radius: 7px; color: var(--day-ink); background: var(--day-bg); font-size: 12px; font-weight: 800; white-space: nowrap; }
+.day-chip { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid var(--day-border); border-radius: 7px; color: var(--day-ink); background: var(--day-bg); font-size: 12px; font-weight: 800; white-space: nowrap; }
+.day-chip.is-locked { border-width: 2px; padding: 2px 7px; }
+.day-chip-lock { font-size: 10px; line-height: 1; }
 .provider-link { color: var(--blue); font-weight: 700; text-decoration: none; }
 .provider-link:hover { text-decoration: underline; }
 

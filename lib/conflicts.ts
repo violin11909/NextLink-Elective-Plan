@@ -29,6 +29,9 @@ export type ConflictCode =
 export type Conflict = {
   id: string;
   code: ConflictCode;
+  /** Whose course this is. The row reads as an errand to run, and the errand is
+   *  always a phone call to one of these. */
+  providers: string[];
   /** Reuses the shared follow-up vocabulary so the KPI card and the filter
    *  chips work without a second set of names. */
   severity: QueueKind;
@@ -91,7 +94,16 @@ export function detectConflicts(input: {
     courseIds: string[],
     assignmentIds: string[],
   ) => {
-    found.push({ id: `${code}:${key}`, code, severity: SEVERITY[code], courseIds, assignmentIds, title, detail });
+    found.push({
+      id: `${code}:${key}`,
+      code,
+      severity: SEVERITY[code],
+      courseIds,
+      assignmentIds,
+      providers: [...new Set(courseIds.map((id) => coursesById.get(id)?.provider).filter((name): name is string => Boolean(name)))],
+      title,
+      detail,
+    });
   };
 
   // --- Pairwise checks: two assignments whose real times touch on one day ---
@@ -152,7 +164,7 @@ export function detectConflicts(input: {
       add(
         "OUTSIDE_AVAILABILITY",
         assignment.id,
-        `${course.provider} ไม่ได้แจ้งว่าสะดวก${slotLabel(assignment.slotId)}`,
+        `${course.provider} ไม่สะดวก${slotLabel(assignment.slotId)}`,
         `ช่วงที่แจ้งไว้คือ ${course.availability.map(slotLabel).join(" · ") || "ยังไม่ได้แจ้ง"}`,
         [course.id],
         [assignment.id],

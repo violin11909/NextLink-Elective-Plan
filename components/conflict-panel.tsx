@@ -52,7 +52,15 @@ export function ConflictPanel({
                   {QUEUE_META[conflict.severity].label}
                 </span>
               </span>
-              <small>{conflict.detail}</small>
+              <small>
+                {conflict.providers.length > 0 ? (
+                  <>
+                    <span className="conflict-provider">{conflict.providers.join(" · ")}</span>
+                    {" · "}
+                  </>
+                ) : null}
+                {conflict.detail}
+              </small>
               {gap ? (
                 <ul className="conflict-slot-list">
                   {gap.reason.perSlot.map((slot) => (
