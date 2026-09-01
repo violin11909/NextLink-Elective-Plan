@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { conflictCounts, detectConflicts, type Conflict } from "@/lib/conflicts.ts";
+import { detectConflicts, type Conflict } from "@/lib/conflicts.ts";
 import { defaultTimesFor, explainFailure, planSchedule, sortAssignments } from "@/lib/scheduler.ts";
 import type { Assignment, FailureReason, PlanCourse, PlanPayload } from "@/lib/plan-types.ts";
 import type { SlotId } from "@/lib/slots.ts";
@@ -74,8 +74,6 @@ export function usePlanState(payload: PlanPayload) {
     () => detectConflicts({ courses, rooms: payload.rooms, assignments }),
     [courses, payload.rooms, assignments],
   );
-
-  const counts = useMemo(() => conflictCounts(conflicts), [conflicts]);
 
   /** Courses that still owe the week a period, and why they could not get one. */
   const gaps: PlanGap[] = useMemo(() => {
@@ -213,7 +211,6 @@ export function usePlanState(payload: PlanPayload) {
     rooms: payload.rooms,
     assignments,
     conflicts,
-    counts,
     gaps,
     editedAt,
     runAutoAssign,

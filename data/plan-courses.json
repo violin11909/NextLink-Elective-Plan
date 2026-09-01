@@ -11,7 +11,7 @@
       "title": "SW Dev for CMMI Standard",
       "category": "วิศวกรรมซอฟต์แวร์",
       "provider": "Soft Square",
-      "instructor": "อาจารย์กานต์",
+      "instructor": "อาจารย์กานต์ ศรีสุวรรณ",
       "coordinator": {
         "name": "คุณนลิน",
         "email": "narin.softsquare@example.com",
@@ -33,7 +33,7 @@
       "title": "AI Service Development",
       "category": "ปัญญาประดิษฐ์และข้อมูล",
       "provider": "Soft Square",
-      "instructor": "อาจารย์เมธา",
+      "instructor": "อาจารย์เมธา ปัญญาดี",
       "coordinator": {
         "name": "คุณพิมพ์ชนก",
         "email": "pimchanok.softsquare@example.com",
@@ -56,7 +56,7 @@
       "title": "Digital & AI Transformation",
       "category": "ปัญญาประดิษฐ์และข้อมูล",
       "provider": "Stelligence",
-      "instructor": "อาจารย์ปริญญา",
+      "instructor": "อาจารย์ปริญญา วงศ์สถิตย์",
       "coordinator": {
         "name": "คุณเตนล์",
         "email": "ten.stelligence@example.com",
@@ -79,7 +79,7 @@
       "title": "System Design for Software Development",
       "category": "วิศวกรรมซอฟต์แวร์",
       "provider": "Playtorium",
-      "instructor": "อาจารย์ศิริ",
+      "instructor": "อาจารย์ศิริ พูนทรัพย์",
       "coordinator": {
         "name": "คุณภัทร",
         "email": "phat.playtorium@example.com",
@@ -103,7 +103,7 @@
       "title": "Secure Software & Threat Modeling",
       "category": "ความมั่นคงปลอดภัยไซเบอร์",
       "provider": "Cyber Defense Lab",
-      "instructor": "อาจารย์นภัส",
+      "instructor": "อาจารย์นภัส เจริญรัตน์",
       "coordinator": {
         "name": "คุณกิตติ",
         "email": "kitti.cyberdefense@example.com",
@@ -127,7 +127,7 @@
       "title": "Applied Data Analytics",
       "category": "การวิเคราะห์ข้อมูล",
       "provider": "DataPulse",
-      "instructor": "อาจารย์วริน",
+      "instructor": "อาจารย์วริน แสงทองดี",
       "coordinator": {
         "name": "คุณอรทัย",
         "email": "orathai.datapulse@example.com",
@@ -150,7 +150,7 @@
       "title": "Cloud Architecture & DevOps",
       "category": "คลาวด์และ DevOps",
       "provider": "CloudNexa",
-      "instructor": "อาจารย์ธนา",
+      "instructor": "อาจารย์ธนา ชัยพัฒน์",
       "coordinator": {
         "name": "คุณศุภชัย",
         "email": "supachai.cloudnexa@example.com",
@@ -173,7 +173,7 @@
       "title": "Product Discovery and UX Research",
       "category": "ผลิตภัณฑ์และ UX",
       "provider": "DesignCraft",
-      "instructor": "อาจารย์ลลิตา",
+      "instructor": "อาจารย์ลลิตา บุญมาก",
       "coordinator": {
         "name": "คุณมินตรา",
         "email": "mintra.designcraft@example.com",
@@ -197,7 +197,7 @@
       "title": "Digital Product Management",
       "category": "ธุรกิจและการจัดการ",
       "provider": "BrightWorks",
-      "instructor": "อาจารย์ภูมิ",
+      "instructor": "อาจารย์ภูมิ ไพศาลกิจ",
       "coordinator": {
         "name": "คุณวริศรา",
         "email": "warisara.brightworks@example.com",
@@ -220,7 +220,7 @@
       "title": "Knowledge Graph & RAG Applications",
       "category": "ปัญญาประดิษฐ์และข้อมูล",
       "provider": "GraphMind",
-      "instructor": "อาจารย์ชล",
+      "instructor": "อาจารย์ชล ธารารักษ์",
       "coordinator": {
         "name": "คุณรวิ",
         "email": "rawi.graphmind@example.com",
@@ -243,7 +243,7 @@
       "title": "Modern Frontend Engineering",
       "category": "วิศวกรรมซอฟต์แวร์",
       "provider": "Pixel Forge",
-      "instructor": "อาจารย์ธีร์",
+      "instructor": "อาจารย์ธีร์ สมบูรณ์ผล",
       "coordinator": {
         "name": "คุณเอมี่",
         "email": "amy.pixelforge@example.com",
@@ -266,7 +266,7 @@
       "title": "Data Engineering on Cloud",
       "category": "คลาวด์และ DevOps",
       "provider": "CloudNexa",
-      "instructor": "อาจารย์ธนา",
+      "instructor": "อาจารย์ธนา ชัยพัฒน์",
       "coordinator": {
         "name": "คุณศุภชัย",
         "email": "supachai.cloudnexa@example.com",
@@ -290,7 +290,7 @@
       "title": "Generative AI for Business Workflows",
       "category": "ปัญญาประดิษฐ์และข้อมูล",
       "provider": "Innovex",
-      "instructor": "อาจารย์ณัฐ",
+      "instructor": "อาจารย์ณัฐ อรุณเรือง",
       "coordinator": {
         "name": "คุณปาริชาต",
         "email": "parichat.innovex@example.com",
@@ -312,7 +312,7 @@
       "title": "Responsible AI & Data Governance",
       "category": "ปัญญาประดิษฐ์และข้อมูล",
       "provider": "Innovex",
-      "instructor": "อาจารย์ณัฐ",
+      "instructor": "อาจารย์ณัฐ อรุณเรือง",
       "coordinator": {
         "name": "คุณปาริชาต",
         "email": "parichat.innovex@example.com",
@@ -334,7 +334,7 @@
       "title": "Embedded Systems for IoT",
       "category": "ระบบฝังตัวและ IoT",
       "provider": "Sensora",
-      "instructor": "อาจารย์พงศ์",
+      "instructor": "อาจารย์พงศ์ ทวีสิน",
       "coordinator": {
         "name": "คุณธิดา",
         "email": "thida.sensora@example.com",
@@ -357,7 +357,7 @@
       "title": "Test Automation & QA Engineering",
       "category": "วิศวกรรมซอฟต์แวร์",
       "provider": "Playtorium",
-      "instructor": "อาจารย์กมล",
+      "instructor": "อาจารย์กมล รุ่งเรืองชัย",
       "coordinator": {
         "name": "คุณภัทร",
         "email": "phat.playtorium@example.com",
@@ -380,7 +380,7 @@
       "title": "Blockchain & Digital Trust",
       "category": "ความมั่นคงปลอดภัยไซเบอร์",
       "provider": "ChainWorks",
-      "instructor": "อาจารย์อารีย์",
+      "instructor": "อาจารย์อารีย์ สุขเกษม",
       "coordinator": {
         "name": "คุณสิรี",
         "email": "siree.chainworks@example.com",
@@ -403,7 +403,7 @@
       "title": "Technical Writing for Engineers",
       "category": "ธุรกิจและการจัดการ",
       "provider": "BrightWorks",
-      "instructor": "อาจารย์วิภา",
+      "instructor": "อาจารย์วิภา นันทวัฒน์",
       "coordinator": {
         "name": "คุณวริศรา",
         "email": "warisara.brightworks@example.com",

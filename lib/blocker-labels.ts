@@ -7,7 +7,7 @@ import type { BlockerCode } from "./plan-types.ts";
  * for word — the same obstruction described two ways reads as two problems.
  */
 export const BLOCKER_LABELS: Record<BlockerCode, string> = {
-  OUTSIDE_AVAILABILITY: "บริษัทไม่ได้แจ้งว่าสะดวกคาบนี้",
+  OUTSIDE_AVAILABILITY: "บริษัทไม่สะดวกช่วงเวลานี้",
   ROOM_BLOCKED: "ห้องถูกกันไว้คาบนี้",
   ROOM_DOUBLE_BOOKED: "ห้องถูกใช้อยู่แล้ว",
   ROOM_TOO_SMALL: "ห้องเล็กกว่าจำนวนที่รับ",

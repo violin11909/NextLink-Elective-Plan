@@ -39,11 +39,6 @@ export function AvailabilityEditor({ payload }: { payload: PlanPayload }) {
     if (found.period) setPeriod(found.period as PeriodKey);
   });
 
-  const providers = useMemo(
-    () => [...new Set(plan.courses.map((course) => course.provider))].sort((a, b) => a.localeCompare(b, "th")),
-    [plan.courses],
-  );
-
   const rows = useMemo(() => {
     const needle = deferredSearch.trim().toLowerCase();
     const providerNeedle = deferredProvider.trim().toLowerCase();
@@ -115,18 +110,15 @@ export function AvailabilityEditor({ payload }: { payload: PlanPayload }) {
           </label>
           <label>
             บริษัท
-            {/* Typed, not picked: a real term brings hundreds of companies and a
-                select with hundreds of options is a scroll, not a choice. */}
+            {/* Typed, and only typed: a real term brings hundreds of companies,
+                and neither a select nor an autocomplete list of that length is
+                faster than knowing the first three letters. */}
             <input
               type="search"
-              list="course-providers"
               value={provider}
               placeholder="พิมพ์ชื่อบริษัท"
               onChange={(event) => setProvider(event.target.value)}
             />
-            <datalist id="course-providers">
-              {providers.map((name) => <option key={name} value={name} />)}
-            </datalist>
           </label>
           <SlotFilters day={day} period={period} onDay={setDay} onPeriod={setPeriod} />
         </div>

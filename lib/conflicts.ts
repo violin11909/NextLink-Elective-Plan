@@ -1,4 +1,5 @@
-import { DAY_LABELS, PERIODS, overlaps, parseSlotId, slotLabel, slotRank, type SlotId } from "./slots.ts";
+import { personName } from "./format.ts";
+import { DAY_LABELS, PERIODS, overlaps, parseSlotId, slotLabel } from "./slots.ts";
 import type { Assignment, BlockerCode, PlanCourse, PlanRoom } from "./plan-types.ts";
 import type { QueueKind } from "./queue.ts";
 
@@ -21,7 +22,6 @@ import type { QueueKind } from "./queue.ts";
 
 export type ConflictCode =
   | BlockerCode
-  | "CATEGORY_CLASH"
   | "SPILLS_PERIOD"
   | "UNDER_SCHEDULED"
   | "NO_AVAILABILITY"
@@ -30,6 +30,9 @@ export type ConflictCode =
 export type Conflict = {
   id: string;
   code: ConflictCode;
+  /** Whose course this is — company and lecturer. The row reads as an errand to
+   *  run, and the errand is always a phone call to one of these. */
+  who: string[];
   /** Reuses the shared follow-up vocabulary so the KPI card and the filter
    *  chips work without a second set of names. */
   severity: QueueKind;
@@ -50,9 +53,19 @@ const SEVERITY: Record<ConflictCode, QueueKind> = {
   UNDER_SCHEDULED: "WAITING",
   NO_AVAILABILITY: "WAITING",
   NEEDS_ROOM_APPROVAL: "WAITING",
-  CATEGORY_CLASH: "IN_PROGRESS",
   SPILLS_PERIOD: "IN_PROGRESS",
 };
+
+/*
+ * Deliberately not a conflict: two courses of the same category in one period.
+ *
+ * The scheduler still prefers to avoid it — see `avoidCategoryClash` in
+ * SCHEDULER_WEIGHTS — but reporting it as something to fix was overreach. With
+ * eighteen periods in a week and five courses in the AI category, the overlap
+ * is close to unavoidable, and the system does not know how many electives a
+ * student takes or which ones they were choosing between. It was telling the
+ * coordinator off for a decision it had no standing to judge.
+ */
 
 /*
  * Deliberately not a conflict: "placed but not locked yet".
@@ -82,7 +95,23 @@ export function detectConflicts(input: {
     courseIds: string[],
     assignmentIds: string[],
   ) => {
-    found.push({ id: `${code}:${key}`, code, severity: SEVERITY[code], courseIds, assignmentIds, title, detail });
+    found.push({
+      id: `${code}:${key}`,
+      code,
+      severity: SEVERITY[code],
+      courseIds,
+      assignmentIds,
+      who: [
+        ...new Set(
+          courseIds
+            .map((id) => coursesById.get(id))
+            .filter((course): course is PlanCourse => Boolean(course))
+            .map((course) => `${course.provider} · ${personName(course.instructor)}`),
+        ),
+      ],
+      title,
+      detail,
+    });
   };
 
   // --- Pairwise checks: two assignments whose real times touch on one day ---
@@ -119,26 +148,17 @@ export function detectConflicts(input: {
           [courseA.id, courseB.id],
           [a.id, b.id],
         );
-      } else if (courseA.provider === courseB.provider) {
-        add(
-          "PROVIDER_BUSY",
-          pair,
-          `${courseA.provider} ต้องส่งสองทีมพร้อมกัน`,
-          `${courseA.title} และ ${courseB.title} ตรงกัน ${when}`,
-          [courseA.id, courseB.id],
-          [a.id, b.id],
-        );
-      }
-      if (courseA.category === courseB.category && a.slotId === b.slotId) {
-        add(
-          "CATEGORY_CLASH",
-          pair,
-          `หมวด ${courseA.category} ชนกันเอง`,
-          `${courseA.title} และ ${courseB.title} อยู่คาบ ${slotLabel(a.slotId)} เหมือนกัน นิสิตเลือกได้ตัวเดียว`,
-          [courseA.id, courseB.id],
-          [a.id, b.id],
-        );
-      }
+      } 
+      // else if (courseA.provider === courseB.provider) {
+      //   add(
+      //     "PROVIDER_BUSY",
+      //     pair,
+      //     `${courseA.provider} ต้องส่งสองทีมพร้อมกัน`,
+      //     `${courseA.title} และ ${courseB.title} ตรงกัน ${when}`,
+      //     [courseA.id, courseB.id],
+      //     [a.id, b.id],
+      //   );
+      // }
     }
   }
 
@@ -153,7 +173,7 @@ export function detectConflicts(input: {
       add(
         "OUTSIDE_AVAILABILITY",
         assignment.id,
-        `${course.provider} ไม่ได้แจ้งว่าสะดวก${slotLabel(assignment.slotId)}`,
+        `${course.provider} ไม่สะดวก${slotLabel(assignment.slotId)}`,
         `ช่วงที่แจ้งไว้คือ ${course.availability.map(slotLabel).join(" · ") || "ยังไม่ได้แจ้ง"}`,
         [course.id],
         [assignment.id],
@@ -242,17 +262,4 @@ export function detectConflicts(input: {
     const slotB = b.assignmentIds[0] ?? "";
     return slotA.localeCompare(slotB) || a.id.localeCompare(b.id);
   });
-}
-
-/** Counts for <PriorityKpi> and <QueueFilterGroup>, which want all three keys. */
-export function conflictCounts(conflicts: Conflict[]): Record<QueueKind, number> {
-  const counts: Record<QueueKind, number> = { BLOCKED: 0, WAITING: 0, IN_PROGRESS: 0 };
-  for (const conflict of conflicts) counts[conflict.severity] += 1;
-  return counts;
-}
-
-/** Slot ids a course could still be moved to, for the "ย้ายไปที่..." picker. */
-export function freeSlotsFor(course: PlanCourse, assignments: Assignment[]): SlotId[] {
-  const taken = new Set(assignments.filter((item) => item.courseId === course.id).map((item) => item.slotId));
-  return course.availability.filter((slotId) => !taken.has(slotId)).sort((a, b) => slotRank(a) - slotRank(b));
 }

@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 const sections = [
   { href: "/", label: "ภาพรวมแผน" },
   { href: "/rooms", label: "ห้องเรียน" },
-  { href: "/courses", label: "วิชาและช่วงที่สะดวก" },
+  { href: "/courses/list", label: "รายวิชา" },
+  { href: "/courses", label: "ช่วงที่สะดวก" },
 ];
 
 /**

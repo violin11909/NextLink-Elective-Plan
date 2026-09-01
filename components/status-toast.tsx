@@ -9,7 +9,7 @@ type Toast = { message: string; undo?: () => void };
  * timer made it mouse-only. Ten seconds plus a hold while the toast is hovered
  * or focused gives keyboard and screen-reader users a usable window.
  */
-const TOAST_MS = 10000;
+const TOAST_MS = 5000;
 
 /** Confirms an inline status change and offers a way back for a few seconds. */
 export function useStatusToast() {

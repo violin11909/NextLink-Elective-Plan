@@ -12,7 +12,7 @@
 import { readFileSync, readdirSync, existsSync } from "node:fs";
 
 /** Every top-level page component, in nav order. */
-const PAGES = ["plan-overview", "room-list", "room-schedule", "availability-editor"];
+const PAGES = ["plan-overview", "course-list", "room-list", "room-schedule", "availability-editor"];
 /** The page that leads with the KPI row and the follow-up queue. */
 const OVERVIEW = "plan-overview";
 /**
@@ -27,7 +27,7 @@ const SHELL = { file: "components/plan-shell.tsx", uses: "<AppNav" };
 /**
  * The KPI row's tone order, checked against a declared list rather than against
  * another page: there is only one KPI page now, and a cross-page rule with one
- * page in it checks nothing. `red` comes from <PriorityKpi>, which hard-codes it.
+ * page in it checks nothing.
  */
 const KPI_TONE_ORDER = ["red", "blue", "green", "purple", "orange"];
 
@@ -44,11 +44,9 @@ if (built.length === 0) {
 // 1. KPI tone order. A reader learns "the red one is what needs me" by
 //    position; a row that reshuffles between releases teaches nothing.
 if (built.includes(OVERVIEW)) {
-  const source = read(OVERVIEW);
-  const tones = [...source.matchAll(/className="kpi-card ([a-z]+)"/g)].map((m) => m[1]);
-  const order = [source.includes("<PriorityKpi") ? "red" : "(no PriorityKpi)", ...tones];
-  if (order.join(" ") !== KPI_TONE_ORDER.join(" ")) {
-    failures.push(`${OVERVIEW} KPI row is ${order.join(" ")}, expected ${KPI_TONE_ORDER.join(" ")}`);
+  const tones = [...read(OVERVIEW).matchAll(/className="kpi-card ([a-z]+)"/g)].map((m) => m[1]);
+  if (tones.join(" ") !== KPI_TONE_ORDER.join(" ")) {
+    failures.push(`${OVERVIEW} KPI row is ${tones.join(" ") || "(none)"}, expected ${KPI_TONE_ORDER.join(" ")}`);
   }
 }
 

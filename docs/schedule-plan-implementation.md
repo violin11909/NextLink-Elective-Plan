@@ -306,7 +306,7 @@ const second = autoAssign({
   "title": "SW Dev for CMMI Standard",
   "category": "วิศวกรรมซอฟต์แวร์",
   "provider": "Soft Square",
-  "instructor": "อาจารย์กานต์",
+  "instructor": "อาจารย์กานต์ ศรีสุวรรณ",
   "deliveryMode": "ON_SITE",
   "availability": ["WED_AM"],
   "sessionsPerWeek": 1,
