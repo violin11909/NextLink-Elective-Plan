@@ -1,3 +1,4 @@
+import { personName } from "./format.ts";
 import { DAY_LABELS, PERIODS, overlaps, parseSlotId, slotLabel } from "./slots.ts";
 import type { Assignment, BlockerCode, PlanCourse, PlanRoom } from "./plan-types.ts";
 import type { QueueKind } from "./queue.ts";
@@ -29,9 +30,9 @@ export type ConflictCode =
 export type Conflict = {
   id: string;
   code: ConflictCode;
-  /** Whose course this is. The row reads as an errand to run, and the errand is
-   *  always a phone call to one of these. */
-  providers: string[];
+  /** Whose course this is — company and lecturer. The row reads as an errand to
+   *  run, and the errand is always a phone call to one of these. */
+  who: string[];
   /** Reuses the shared follow-up vocabulary so the KPI card and the filter
    *  chips work without a second set of names. */
   severity: QueueKind;
@@ -100,7 +101,14 @@ export function detectConflicts(input: {
       severity: SEVERITY[code],
       courseIds,
       assignmentIds,
-      providers: [...new Set(courseIds.map((id) => coursesById.get(id)?.provider).filter((name): name is string => Boolean(name)))],
+      who: [
+        ...new Set(
+          courseIds
+            .map((id) => coursesById.get(id))
+            .filter((course): course is PlanCourse => Boolean(course))
+            .map((course) => `${course.provider} · ${personName(course.instructor)}`),
+        ),
+      ],
       title,
       detail,
     });
@@ -140,16 +148,17 @@ export function detectConflicts(input: {
           [courseA.id, courseB.id],
           [a.id, b.id],
         );
-      } else if (courseA.provider === courseB.provider) {
-        add(
-          "PROVIDER_BUSY",
-          pair,
-          `${courseA.provider} ต้องส่งสองทีมพร้อมกัน`,
-          `${courseA.title} และ ${courseB.title} ตรงกัน ${when}`,
-          [courseA.id, courseB.id],
-          [a.id, b.id],
-        );
-      }
+      } 
+      // else if (courseA.provider === courseB.provider) {
+      //   add(
+      //     "PROVIDER_BUSY",
+      //     pair,
+      //     `${courseA.provider} ต้องส่งสองทีมพร้อมกัน`,
+      //     `${courseA.title} และ ${courseB.title} ตรงกัน ${when}`,
+      //     [courseA.id, courseB.id],
+      //     [a.id, b.id],
+      //   );
+      // }
     }
   }
 

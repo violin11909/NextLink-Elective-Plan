@@ -183,7 +183,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
             <span className="kpi-label">ต้องขออนุมัติห้อง</span>
           </span>
           <p className="kpi-value">{formatNumber(needsApproval)}</p>
-          <p className="kpi-note">คาบที่ตกไปอยู่ห้องตึก 3 / ตึก 4 ของคณะวิศวะ</p>
+          {/* <p className="kpi-note">คาบที่ตกไปอยู่ห้องตึก 3 / ตึก 4 ของคณะวิศวะ</p> */}
         </div>
       </div>
 
@@ -227,7 +227,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
             <h3>ตารางห้องเรียนทั้งสัปดาห์</h3>
             {/* {holding ? (
               <p className="matrix-holding">
-                กำลังวาง <strong>{holding.title}</strong> — ช่องขอบเขียวคือวางได้
+                กำลังวาง <strong>{holding.title}</strong> — ชี้ช่องที่ต้องการแล้วกด ช่องที่ขึ้นขอบเขียวคือวางได้
               </p>
             ) : null} */}
           </div>
@@ -255,8 +255,19 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           onMove={plan.move}
           onToggleLock={plan.toggleLock}
           onRemove={(id) => { plan.remove(id); show("เอาวิชาออกจากตารางแล้ว", plan.undo); }}
-          onBlockedDrop={(title, slotId, blockers) =>
-            show(`${title} ลง${slotLabel(slotId)}แล้ว แต่ ${blockers.map((code) => BLOCKER_LABELS[code]).join(" · ")}`, plan.undo)
+          onBlockedDrop={(title, slotId, blockers, roomIgnored) =>
+            show(
+              // An online class has no room to give, so the room it was dropped on
+              // is simply dropped. Say that, rather than reading out whatever else
+              // is wrong with the period — the room is why the card moved back.
+              roomIgnored
+                ? `${title} เรียนออนไลน์ จัดห้องเรียนให้ไม่ได้ ${
+                    blockers.length > 0 ? ` และ ${blockers.map((code) => BLOCKER_LABELS[code]).join(" · ")}` : ""
+                  }`
+                : `${title} ${blockers.map((code) => BLOCKER_LABELS[code]).join(" · ")}`,
+                // ลง${slotLabel(slotId)}แล้ว แต่
+              plan.undo,
+            )
           }
           onHeldChange={onHeldChange}
         />

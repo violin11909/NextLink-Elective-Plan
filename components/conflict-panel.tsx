@@ -53,9 +53,9 @@ export function ConflictPanel({
                 </span>
               </span>
               <small>
-                {conflict.providers.length > 0 ? (
+                {conflict.who.length > 0 ? (
                   <>
-                    <span className="conflict-provider">{conflict.providers.join(" · ")}</span>
+                    <span className="conflict-provider">{conflict.who.join(" · ")}</span>
                     {" · "}
                   </>
                 ) : null}

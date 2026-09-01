@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useEffect, useMemo, useState } from "react";
-import { formatNumber } from "@/lib/format";
+import { Fragment, useEffect, useMemo, useState, type KeyboardEvent } from "react";
+import { formatNumber, personName } from "@/lib/format";
 import { placementBlockers } from "@/lib/scheduler.ts";
 import { DAYS, DAY_LABELS, PERIODS, PERIOD_KEYS, makeSlotId, slotLabel, type SlotId } from "@/lib/slots.ts";
 import type { Assignment, BlockerCode, PlanCourse, PlanRoom } from "@/lib/plan-types.ts";
@@ -49,7 +49,7 @@ export function PlanMatrix({
   onToggleLock: (assignmentId: string) => void;
   onRemove: (assignmentId: string) => void;
   /** Called when a drop lands somewhere the rules object to, so the page can say so. */
-  onBlockedDrop: (courseTitle: string, slotId: SlotId, blockers: BlockerCode[]) => void;
+  onBlockedDrop: (courseTitle: string, slotId: SlotId, blockers: BlockerCode[], roomIgnored: boolean) => void;
   /** Lets the page put the "you are placing X" note in its heading. Shown
    *  inside the board it appeared and disappeared above the table, moving
    *  every row down and then back the moment a drag started. */
@@ -103,12 +103,24 @@ export function PlanMatrix({
       roomId: roomIdFor(course, columnKey),
     });
 
+  /**
+   * True when the drop names a room but the class cannot take one.
+   *
+   * An online class holds no room, so the column is dropped and the card lands
+   * back in the online column. Reporting that as a rule the drop broke read as
+   * nonsense — it named whatever else happened to be wrong with the period,
+   * never the reason the card moved back.
+   */
+  const roomWouldBeIgnored = (course: PlanCourse, columnKey: string) =>
+    course.deliveryMode === "ONLINE" && columnKey !== ONLINE_COLUMN;
+
   const drop = (slotId: SlotId, columnKey: string, item: Held) => {
     const course = coursesById.get(item.kind === "assignment" ? item.courseId : item.id);
     if (!course) return;
     const ignore = item.kind === "assignment" ? item.id : undefined;
     const blockers = blockersAt(course, slotId, columnKey, ignore);
     const roomId = roomIdFor(course, columnKey);
+    const roomIgnored = roomWouldBeIgnored(course, columnKey);
 
     if (item.kind === "assignment") onMove(item.id, slotId, roomId);
     else onPlace(course.id, slotId, roomId);
@@ -116,7 +128,7 @@ export function PlanMatrix({
     // Dropped anyway, then told why. Refusing the drop outright would mean a
     // coordinator who has just been given a new time on the phone cannot record
     // it until the data catches up, and that is how a planner gets abandoned.
-    if (blockers.length > 0) onBlockedDrop(course.title, slotId, blockers);
+    if (blockers.length > 0 || roomIgnored) onBlockedDrop(course.title, slotId, blockers, roomIgnored);
     setHeld(null);
     setHover(null);
   };
@@ -128,6 +140,7 @@ export function PlanMatrix({
       const current = assignments.find((item) => item.id === held.id);
       if (current && current.slotId === slotId && (current.roomId ?? ONLINE_COLUMN) === columnKey) return "";
     }
+    if (roomWouldBeIgnored(heldCourse, columnKey)) return " is-drop-blocked";
     return blockersAt(heldCourse, slotId, columnKey, ignore).length === 0 ? " is-drop-ok" : " is-drop-blocked";
   };
 
@@ -163,7 +176,7 @@ export function PlanMatrix({
               type="button"
               onClick={() => { setPickerOpen(false); setHeld(null); }}
             >
-              พับเก็บ
+              ซ่อนรายการ
             </button>
           </div>
           {unplaced.length === 0 ? (
@@ -188,6 +201,7 @@ export function PlanMatrix({
                       <span className="tray-chip-copy">
                         <strong>{course.title}</strong>
                         <small>{course.provider} · ต้องได้ {formatNumber(missing)} คาบ</small>
+                        <small>{personName(course.instructor)}</small>
                         {/* Its own line: run on from the company name, a period
                             like "อังคารบ่าย" broke across two lines mid-word. */}
                         <small className="tray-chip-slots">
@@ -248,10 +262,31 @@ export function PlanMatrix({
                         const here = assignments.filter(
                           (item) => item.slotId === slotId && (item.roomId ?? ONLINE_COLUMN) === column.key,
                         );
+                        // The cell is the target, so it carries the verdict as a
+                        // class and CSS paints it on hover. A dedicated "drop here"
+                        // button inside every cell said the same thing in far more
+                        // ink, and made the board unreadable while anything was held.
+                        const state = heldCourse && !blocked ? cellState(slotId, column.key) : "";
+                        const takesDrop = Boolean(state);
                         return (
                           <td
-                            className={`matrix-cell${blocked ? " is-blocked" : ""}${hover === cellKey ? cellState(slotId, column.key) : ""}`}
+                            className={`matrix-cell${blocked ? " is-blocked" : ""}${state}${hover === cellKey ? " is-drop-hovered" : ""}`}
                             key={column.key}
+                            /* Only while something is held: an empty board should
+                               not put 180 stops in the tab order. */
+                            {...(takesDrop
+                              ? {
+                                  role: "button",
+                                  tabIndex: 0,
+                                  "aria-label": `วาง ${heldCourse?.title ?? ""} ที่ ${column.label} ${slotLabel(slotId)}`,
+                                  onClick: () => held && drop(slotId, column.key, held),
+                                  onKeyDown: (event: KeyboardEvent<HTMLTableCellElement>) => {
+                                    if (event.key !== "Enter" && event.key !== " ") return;
+                                    event.preventDefault();
+                                    if (held) drop(slotId, column.key, held);
+                                  },
+                                }
+                              : {})}
                             onDragOver={(event) => {
                               if (blocked) return;
                               event.preventDefault();
@@ -269,7 +304,7 @@ export function PlanMatrix({
                             }}
                           >
                             {blocked ? (
-                              <span className="matrix-blocked" title={blocked.reason}>สำรองไว้ให้วิชาบังคับ</span>
+                              <span className="matrix-blocked" title={blocked.reason}>จองไว้ให้วิชาบังคับ</span>
                             ) : null}
                             {here.map((assignment) => {
                               const course = coursesById.get(assignment.courseId);
@@ -279,7 +314,33 @@ export function PlanMatrix({
                                 <div
                                   className={`matrix-chip${assignment.locked ? " is-locked" : ""}${hasBlockingConflict(assignment.id) ? " is-conflict" : ""}${isHeld ? " is-held" : ""}`}
                                   key={assignment.id}
+                                  /*
+                                   * Built exactly like the tray chip above: a plain
+                                   * draggable <div> wrapping inert copy. Nothing
+                                   * between the text and this element may take the
+                                   * press — a <button>, or a span given role and
+                                   * tabindex, becomes the event target and browsers
+                                   * disagree about whether such an element may act
+                                   * as the drag source for a draggable ancestor,
+                                   * which is what left the middle of the card (the
+                                   * course title) undraggable while its bare edges
+                                   * worked. The card itself carries the drag, the
+                                   * click and the keyboard action, so every pixel
+                                   * that is not one of the two corner buttons
+                                   * behaves the same.
+                                   */
                                   draggable={!assignment.locked}
+                                  /*
+                                   * No tabindex and no role, exactly like the tray
+                                   * chip. Making the card focusable put a focus on
+                                   * every mousedown, and a press that focuses now
+                                   * and then fails to become a drag — measured at
+                                   * roughly one press in ten, which is what "the
+                                   * card sometimes will not drag" was. The keyboard
+                                   * path lives in .chip-pick below instead, so
+                                   * pressing the card only ever starts a drag.
+                                   */
+                                  title={assignment.locked ? "ปลดล็อกก่อนจึงจะย้ายได้" : "ลากเพื่อย้าย หรือกดเพื่อหยิบขึ้นแล้วเลือกช่องปลายทาง"}
                                   onDragStart={(event) => {
                                     const payload: Held = { kind: "assignment", id: assignment.id, courseId: course.id };
                                     event.dataTransfer.setData("text/plain", JSON.stringify(payload));
@@ -287,47 +348,69 @@ export function PlanMatrix({
                                     setHeld(payload);
                                   }}
                                   onDragEnd={() => { setHeld(null); setHover(null); }}
+                                  /*
+                                   * Clicking picks the class up so a target period
+                                   * can be chosen — the path a keyboard needs, since
+                                   * a drag cannot be performed with one.
+                                   */
+                                  onClick={(event) => {
+                                    if (assignment.locked) return;
+                                    // While a different class is held, this card is
+                                    // just part of its cell's drop area — let the
+                                    // click through so the cell takes the drop. Only
+                                    // the card's own pick-up and cancel are kept from
+                                    // the cell, which would otherwise drop the class
+                                    // straight back where it started.
+                                    if (held && !isHeld) return;
+                                    event.stopPropagation();
+                                    setHeld(isHeld ? null : { kind: "assignment", id: assignment.id, courseId: course.id });
+                                  }}
                                 >
+                                  {/* Real buttons, like the tray chip's own action.
+                                      They stop the click so the card does not also
+                                      pick the class up underneath them. */}
                                   <button
                                     className="chip-remove"
                                     type="button"
                                     title="เอาออกจากตาราง"
-                                    onClick={() => onRemove(assignment.id)}
+                                    onClick={(event) => { event.stopPropagation(); onRemove(assignment.id); }}
                                   >
                                     <span aria-hidden="true">×</span>
                                     <span className="sr-only">เอา {course.title} ออกจากตาราง</span>
                                   </button>
-                                  {/*
-                                   * The card body is the handle. Dragging it moves
-                                   * the class; clicking it — or pressing Enter on it
-                                   * — picks the class up so a target period can be
-                                   * chosen. That second path is not decoration: a
-                                   * drag cannot be performed with a keyboard, and
-                                   * this is the main action on the page.
-                                   */}
-                                  <button
-                                    className="matrix-chip-copy"
-                                    type="button"
-                                    disabled={assignment.locked}
-                                    aria-pressed={isHeld}
-                                    title={assignment.locked ? "ปลดล็อกก่อนจึงจะย้ายได้" : "กดเพื่อหยิบขึ้น แล้วเลือกช่องปลายทาง"}
-                                    onClick={() =>
-                                      setHeld(isHeld ? null : { kind: "assignment", id: assignment.id, courseId: course.id })
-                                    }
-                                  >
+                                  <span className="matrix-chip-copy">
                                     <strong>{course.title}</strong>
                                     <small>{course.provider}</small>
-                                    <span className="sr-only">
-                                      {isHeld ? " — ยกเลิกการย้าย" : " — หยิบขึ้นเพื่อย้ายไปช่องอื่น"}
-                                    </span>
-                                  </button>
+                                    <small>{personName(course.instructor)}</small>
+                                  </span>
+                                  {/*
+                                    * The keyboard's way in, and the only focusable
+                                    * thing in the card body. Hidden until it is
+                                    * focused, where it becomes an ordinary button —
+                                    * a drag cannot be performed with a keyboard, so
+                                    * without this the main action on the page would
+                                    * be mouse-only.
+                                    */}
+                                  {assignment.locked ? null : (
+                                    <button
+                                      className="chip-pick"
+                                      type="button"
+                                      aria-pressed={isHeld}
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        setHeld(isHeld ? null : { kind: "assignment", id: assignment.id, courseId: course.id });
+                                      }}
+                                    >
+                                      {isHeld ? `ยกเลิกการย้าย ${course.title}` : `หยิบ ${course.title} ขึ้นเพื่อย้ายไปช่องอื่น`}
+                                    </button>
+                                  )}
                                   <span className="chip-actions">
                                     <button
                                       className={`chip-action${assignment.locked ? " is-on" : ""}`}
                                       type="button"
                                       aria-pressed={assignment.locked}
                                       title={assignment.locked ? "ปลดล็อกคาบนี้" : "ล็อกคาบนี้ไม่ให้ระบบย้าย"}
-                                      onClick={() => onToggleLock(assignment.id)}
+                                      onClick={(event) => { event.stopPropagation(); onToggleLock(assignment.id); }}
                                     >
                                       <span aria-hidden="true">{assignment.locked ? "🔒" : "🔓"}</span>
                                       <span className="sr-only">
@@ -348,18 +431,6 @@ export function PlanMatrix({
                                 <p className="slot-conflict-note">{problems.join(" · ")}</p>
                               ) : null;
                             })()}
-                            {heldCourse && !blocked ? (
-                              <button
-                                className={`matrix-drop${cellState(slotId, column.key)}`}
-                                type="button"
-                                onClick={() => held && drop(slotId, column.key, held)}
-                              >
-                                <span aria-hidden="true">วางที่นี่</span>
-                                <span className="sr-only">
-                                  วาง {heldCourse.title} ที่ {column.label} {slotLabel(slotId)}
-                                </span>
-                              </button>
-                            ) : null}
                           </td>
                         );
                       })}

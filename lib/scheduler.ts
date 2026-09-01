@@ -324,12 +324,12 @@ function explain(course: PlanCourse, placed: Assignment[], ctx: Ctx): FailureRea
       if (item.roomId && room) details.push(`${room.name} ถูกใช้โดย ${other.title}`);
       if (other.instructor === course.instructor) details.push(`${other.instructor} สอน ${other.title} อยู่`);
       else if (other.provider === course.provider) details.push(`${other.provider} ส่งทีมไปสอน ${other.title} แล้ว`);
-      if (item.locked) {
-        push(
-          { kind: "UNLOCK_COURSE", courseId: other.id, label: `ปลดล็อก ${other.title} แล้วจัดใหม่` },
-          `unlock:${other.id}`,
-        );
-      }
+      // if (item.locked) {
+      //   push(
+      //     { kind: "UNLOCK_COURSE", courseId: other.id, label: `ปลดล็อก ${other.title} แล้วจัดใหม่` },
+      //     `unlock:${other.id}`,
+      //   );
+      // }
     }
 
     for (const room of ctx.rooms) {

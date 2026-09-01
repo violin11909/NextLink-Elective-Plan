@@ -40,3 +40,29 @@ export function display(value: string | null | undefined, placeholder = "ยั�
 export function optionalValue(value: string) {
   return value.trim() || null;
 }
+
+/**
+ * A lecturer's name with the academic title taken off.
+ *
+ * The title is the same on nearly every row, so in a list it is noise that
+ * costs the name its space — and inside a card the name is what identifies the
+ * person. Anything unrecognised is left exactly as it came, because a name this
+ * function does not understand is still a name.
+ */
+const NAME_TITLES = ["ศาสตราจารย์", "รองศาสตราจารย์", "ผู้ช่วยศาสตราจารย์", "อาจารย์", "ผศ.ดร.", "รศ.ดร.", "ศ.ดร.", "ผศ.", "รศ.", "ศ.", "ดร.", "อ."];
+
+export function personName(value: string) {
+  let name = value.trim();
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const title of NAME_TITLES) {
+      if (name.startsWith(title)) {
+        name = name.slice(title.length).trim();
+        changed = true;
+        break;
+      }
+    }
+  }
+  return name || value.trim();
+}
