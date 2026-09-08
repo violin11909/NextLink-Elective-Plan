@@ -8,10 +8,11 @@ import { Pager } from "@/components/pager";
 import { PlanShell } from "@/components/plan-shell";
 import { ResultAnnouncer } from "@/components/result-announcer";
 import { SlotFilters, matchesSlotFilter } from "@/components/slot-filters";
+import { buildCourseWorkbook, courseFileName, type ExportContext } from "@/lib/course-export.ts";
 import { formatNumber } from "@/lib/format";
 import { DAY_COLORS } from "@/lib/day-colors.ts";
 import { DAY_LABELS, PERIODS, parseSlotId, slotLabel, type DayKey, type PeriodKey, type SlotId } from "@/lib/slots.ts";
-import type { PlanPayload } from "@/lib/plan-types.ts";
+import type { ArchivedTerm, PlacedPeriod, PlanPayload, TermMeta } from "@/lib/plan-types.ts";
 import { usePlanState } from "@/lib/use-plan-state";
 import { useUrlFilters } from "@/lib/use-url-filters";
 
@@ -26,10 +27,25 @@ const PAGE_SIZE = 10;
  * thing you are actually working in — shared the page with a table you only
  * consult. On its own page the board gets the whole screen and this gets room
  * to be a proper reference list.
+ *
+ * It is also the one page that reads past terms. The rest of the app plans the
+ * term in front of it and would have to answer "what does จัดใหม่ mean on a
+ * term that ended" to show history at all; a reference list has no such
+ * question, so history lands here and stays read-only.
  */
-export function CourseList({ payload }: { payload: PlanPayload }) {
+export function CourseList({
+  payload,
+  terms,
+  archives,
+}: {
+  payload: PlanPayload;
+  terms: TermMeta[];
+  archives: ArchivedTerm[];
+}) {
   const plan = usePlanState(payload);
+  const currentTerm = useMemo(() => terms.find((term) => term.status === "CURRENT") ?? terms[0], [terms]);
 
+  const [termId, setTermId] = useState(currentTerm.id);
   const [search, setSearch] = useState("");
   const [day, setDay] = useState<DayKey | "">("");
   const [period, setPeriod] = useState<PeriodKey | "">("");
@@ -37,33 +53,86 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
   const [page, setPage] = useState(1);
   const deferredSearch = useDeferredValue(search);
 
-  useUrlFilters({ q: search, day, period, placement: placement === "all" ? "" : placement }, (found) => {
-    if (found.q) setSearch(found.q);
-    if (found.day) setDay(found.day as DayKey);
-    if (found.period) setPeriod(found.period as PeriodKey);
-    if (found.placement === "placed" || found.placement === "unplaced") setPlacement(found.placement);
-  });
+  /** null while the current term is selected — the planner's own data. */
+  const archive = useMemo(() => archives.find((item) => item.term.id === termId) ?? null, [archives, termId]);
+
+  useUrlFilters(
+    {
+      q: search,
+      day,
+      period,
+      placement: placement === "all" ? "" : placement,
+      term: termId === currentTerm.id ? "" : termId,
+    },
+    (found) => {
+      if (found.q) setSearch(found.q);
+      if (found.day) setDay(found.day as DayKey);
+      if (found.period) setPeriod(found.period as PeriodKey);
+      if (found.placement === "placed" || found.placement === "unplaced") setPlacement(found.placement);
+      // An id from an old link may name a term that is no longer published;
+      // silently staying on the current term beats an empty page.
+      if (found.term && terms.some((term) => term.id === found.term)) setTermId(found.term);
+    },
+  );
 
   const roomsById = useMemo(() => new Map(plan.rooms.map((room) => [room.id, room])), [plan.rooms]);
+
+  const courses = archive ? archive.courses : plan.courses;
+
+  const periodsByCourse = useMemo(() => {
+    const byCourse = new Map<string, PlacedPeriod[]>();
+    const add = (courseId: string, entry: PlacedPeriod) => {
+      const list = byCourse.get(courseId);
+      if (list) list.push(entry);
+      else byCourse.set(courseId, [entry]);
+    };
+
+    if (archive) {
+      for (const session of archive.sessions) {
+        // The room is the name it had that term, not a lookup into today's
+        // room list — see `ArchivedSession` for why.
+        add(session.courseId, {
+          key: `${session.courseId}@${session.slotId}`,
+          slotId: session.slotId,
+          roomLabel: session.roomName,
+          locked: false,
+        });
+      }
+    } else {
+      for (const item of plan.assignments) {
+        add(item.courseId, {
+          key: item.id,
+          slotId: item.slotId,
+          roomLabel: item.roomId ? roomsById.get(item.roomId)?.name ?? item.roomId : null,
+          locked: item.locked,
+        });
+      }
+    }
+    return byCourse;
+  }, [archive, plan.assignments, roomsById]);
 
   const rows = useMemo(() => {
     // One box for course, lecturer, company and category. Four separate
     // controls asked the reader to know which field a word lived in before
     // they could look it up, which is a question the box can answer itself.
     const needle = deferredSearch.trim().toLowerCase();
-    return plan.courses
-      .map((course) => ({ course, placed: plan.assignments.filter((item) => item.courseId === course.id) }))
+    return courses
+      .map((course) => ({ course, placed: periodsByCourse.get(course.id) ?? [] }))
       .filter(({ course, placed }) => {
         if (!matchesSlotFilter(course.availability, day, period)) return false;
-        if (placement === "placed" && placed.length < course.sessionsPerWeek) return false;
-        if (placement === "unplaced" && placed.length >= course.sessionsPerWeek) return false;
+        // Only the current term has a "still to do" state; in a finished term
+        // every course listed is a course that ran.
+        if (!archive) {
+          if (placement === "placed" && placed.length < course.sessionsPerWeek) return false;
+          if (placement === "unplaced" && placed.length >= course.sessionsPerWeek) return false;
+        }
         if (!needle) return true;
         return [course.title, course.courseCode, course.provider, course.instructor, course.category]
           .join(" ")
           .toLowerCase()
           .includes(needle);
       });
-  }, [plan.courses, plan.assignments, deferredSearch, day, period, placement]);
+  }, [courses, periodsByCourse, archive, deferredSearch, day, period, placement]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -78,7 +147,7 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
           onClear: () => { setDay(""); setPeriod(""); },
         }
       : null,
-    placement !== "all"
+    !archive && placement !== "all"
       ? {
           label: "สถานะ",
           value: placement === "placed" ? "จัดแล้ว" : "ยังไม่ได้จัด",
@@ -94,33 +163,89 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
     setPlacement("all");
   };
 
+  /** The term is a scope, not a filter: the search box narrows within it. */
+  const changeTerm = (nextId: string) => {
+    setTermId(nextId);
+    setPage(1);
+    setPlacement("all");
+  };
+
+  /**
+   * Download what is on screen as .xlsx — every filtered row, not just the
+   * page being shown, because the page is a reading convenience and nobody
+   * asks for "the ten courses I can currently see" in a spreadsheet.
+   *
+   * The file is built here in the browser: these pages are statically
+   * rendered and there is no server to ask, and a term's worth of courses is
+   * a few dozen rows either way.
+   */
+  const downloadXlsx = () => {
+    const context: ExportContext = {
+      term: archive ? archive.term : currentTerm,
+      isArchived: archive !== null,
+      filters: activeFilters.map((filter) => (filter.value ? `${filter.label}: ${filter.value}` : filter.label)),
+      dataUpdated: archive ? archive.lastUpdated : payload.lastUpdated,
+      isMock: archive ? archive.isMock : payload.isMock,
+      timezone: payload.timezone,
+      exportedAt: new Date(),
+    };
+
+    const blob = new Blob([buildCourseWorkbook(context, rows)], {
+      type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = courseFileName(context);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    // Revoked a tick later: revoking in the same task cancels the download in
+    // Safari, which has not read the blob yet when click() returns.
+    window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  };
+
   return (
     <PlanShell
       eyebrow="NextLink"
       title="รายวิชาเลือก"
-      lastUpdated={payload.lastUpdated}
+      lastUpdated={archive ? archive.lastUpdated : payload.lastUpdated}
       timezone={payload.timezone}
-      isMock={payload.isMock}
-      editedAt={plan.editedAt}
+      isMock={archive ? archive.isMock : payload.isMock}
+      // Local edits belong to the term being planned; saying "แก้ไขไว้ในเครื่องนี้"
+      // over a term that ended would point at edits this page is not showing.
+      editedAt={archive ? null : plan.editedAt}
       onReset={plan.resetAll}
     >
       <div className="intro-row">
         <div>
           <p className="section-kicker">รายวิชา</p>
-          <h2>ช่วงที่บริษัทสะดวก และคาบที่ได้จริง</h2>
+          <h2>{archive ? "วิชาที่เปิดจริง และคาบที่สอนจริง" : "ช่วงที่บริษัทสะดวก และคาบที่ได้จริง"}</h2>
           <p className="intro-copy">
-            กดชื่อวิชาหรือชื่อบริษัทเพื่อไปแก้ช่วงที่สะดวกของรายการนั้นได้ทันที
+            {archive
+              ? `${archive.term.label} — เทอมที่ปิดไปแล้ว ดูได้อย่างเดียว`
+              : "กดชื่อวิชาหรือชื่อบริษัทเพื่อไปแก้ช่วงที่สะดวกของรายการนั้นได้ทันที"}
           </p>
         </div>
         <div className="intro-badges">
+          <label className="term-switcher">
+            <span className="term-switcher-label">เทอม / ปีการศึกษา</span>
+            <select value={termId} onChange={(event) => changeTerm(event.target.value)}>
+              {terms.map((term) => (
+                <option key={term.id} value={term.id}>
+                  {term.label}{term.status === "CURRENT" ? " · กำลังจัด" : ""}
+                </option>
+              ))}
+            </select>
+          </label>
           <span className="scope-chip">
-            <span className="scope-chip-label">วิชาทั้งหมด</span> {formatNumber(plan.courses.length)}
+            <span className="scope-chip-label">วิชาทั้งหมด</span> {formatNumber(courses.length)}
           </span>
         </div>
       </div>
 
       <section className="panel table-panel">
-        <div className="filters filters-list">
+        <div className={`filters ${archive ? "filters-archive" : "filters-list"}`}>
           <label>
             ค้นหาวิชา ผู้สอน บริษัท หรือหมวด
             <input
@@ -130,17 +255,21 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
               onChange={(event) => { setSearch(event.target.value); setPage(1); }}
             />
           </label>
-          <label>
-            สถานะการจัด
-            <select
-              value={placement}
-              onChange={(event) => { setPlacement(event.target.value as PlacementFilter); setPage(1); }}
-            >
-              <option value="all">ทั้งหมด</option>
-              <option value="placed">จัดครบแล้ว</option>
-              <option value="unplaced">ยังจัดไม่ครบ</option>
-            </select>
-          </label>
+          {/* Every course in a finished term ran, so a "จัดครบแล้ว / ยังจัดไม่ครบ"
+              control there would be a filter with one possible answer. */}
+          {archive ? null : (
+            <label>
+              สถานะการจัด
+              <select
+                value={placement}
+                onChange={(event) => { setPlacement(event.target.value as PlacementFilter); setPage(1); }}
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="placed">จัดครบแล้ว</option>
+                <option value="unplaced">ยังจัดไม่ครบ</option>
+              </select>
+            </label>
+          )}
           <SlotFilters
             day={day}
             period={period}
@@ -148,9 +277,20 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
             onPeriod={(next) => { setPeriod(next); setPage(1); }}
           />
         </div>
-        <FilterSummary summary={`พบ ${formatNumber(rows.length)} วิชา`} filters={activeFilters} />
+        <div className="list-toolbar">
+          <FilterSummary summary={`พบ ${formatNumber(rows.length)} วิชา`} filters={activeFilters} />
+          <button
+            className="secondary-button"
+            type="button"
+            onClick={downloadXlsx}
+            disabled={rows.length === 0}
+            title={`ดาวน์โหลด ${formatNumber(rows.length)} วิชาที่แสดงอยู่เป็นไฟล์ Excel`}
+          >
+            ดาวน์โหลด Excel
+          </button>
+        </div>
 
-        <ResultAnnouncer message={`พบ ${rows.length} วิชา`} />
+        <ResultAnnouncer message={`พบ ${rows.length} วิชา ใน${archive ? archive.term.label : currentTerm.label}`} />
         {rows.length === 0 ? (
           <EmptyResult message="ไม่พบวิชาที่ตรงกับตัวกรอง" hasFilters={activeFilters.length > 0} onClear={clearFilters} />
         ) : (
@@ -162,8 +302,8 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
                     <th scope="col">วิชา</th>
                     <th scope="col">บริษัท</th>
                     <th scope="col">ผู้สอน</th>
-                    <th scope="col">ช่วงที่สะดวก</th>
-                    <th scope="col">คาบที่ได้</th>
+                    <th scope="col">{archive ? "ช่วงที่แจ้งไว้" : "ช่วงที่สะดวก"}</th>
+                    <th scope="col">{archive ? "คาบที่สอน" : "คาบที่ได้"}</th>
                     <th scope="col">ห้อง</th>
                   </tr>
                 </thead>
@@ -174,16 +314,29 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
                         {/* Both the title and the company lead to the same page,
                             filtered to what was clicked — from a row here the
                             next question is always "what else can they do", and
-                            the answer lives on the availability page. */}
-                        <Link className="course-link" href={`/courses?q=${encodeURIComponent(course.title)}`}>
-                          <strong>{course.title}</strong>
-                          <span className="course-code">{course.courseCode} · {course.category}</span>
-                        </Link>
+                            the answer lives on the availability page. That page
+                            only knows the term being planned, so a past term's
+                            rows are plain text rather than links into it. */}
+                        {archive ? (
+                          <span className="course-link is-static">
+                            <strong>{course.title}</strong>
+                            <span className="course-code">{course.courseCode} · {course.category}</span>
+                          </span>
+                        ) : (
+                          <Link className="course-link" href={`/courses?q=${encodeURIComponent(course.title)}`}>
+                            <strong>{course.title}</strong>
+                            <span className="course-code">{course.courseCode} · {course.category}</span>
+                          </Link>
+                        )}
                       </td>
                       <td>
-                        <Link className="provider-link" href={`/courses?provider=${encodeURIComponent(course.provider)}`}>
-                          {course.provider}
-                        </Link>
+                        {archive ? (
+                          <span className="schedule-text">{course.provider}</span>
+                        ) : (
+                          <Link className="provider-link" href={`/courses?provider=${encodeURIComponent(course.provider)}`}>
+                            {course.provider}
+                          </Link>
+                        )}
                       </td>
                       <td><span className="schedule-text">{course.instructor}</span></td>
                       <td>
@@ -219,14 +372,16 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
                              reason they sit next to each other. The lock is what
                              the old green/blue split used to carry; it stays as a
                              glyph rather than a colour, because colour is now
-                             saying which day. */
+                             saying which day. Nothing in a past term is locked:
+                             a record cannot be moved, so a lock on every chip
+                             would mark a distinction that no longer exists. */
                           <span className="day-chip-list">
                             {placed.map((item) => {
                               const colour = DAY_COLORS[parseSlotId(item.slotId).day];
                               return (
                                 <span
                                   className={`day-chip${item.locked ? " is-locked" : ""}`}
-                                  key={item.id}
+                                  key={item.key}
                                   style={{
                                     ["--day-ink" as string]: colour.ink,
                                     ["--day-bg" as string]: colour.bg,
@@ -253,8 +408,8 @@ export function CourseList({ payload }: { payload: PlanPayload }) {
                         ) : (
                           <span className="status-stack">
                             {placed.map((item) => (
-                              <span className="room-tag" key={item.id}>
-                                {item.roomId ? roomsById.get(item.roomId)?.name ?? item.roomId : "ออนไลน์"}
+                              <span className="room-tag" key={item.key}>
+                                {item.roomLabel ?? "ออนไลน์"}
                               </span>
                             ))}
                           </span>

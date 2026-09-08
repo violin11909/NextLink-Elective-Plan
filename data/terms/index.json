@@ -1,0 +1,38 @@
+{
+  "note": "ทุกเทอมที่ระบบรู้จัก เรียงใหม่ไปเก่า · CURRENT อยู่ใน data/plan-courses.json · ARCHIVED อยู่ใน data/terms/<id>.json",
+  "currentTermId": "2569-1",
+  "terms": [
+    {
+      "id": "2569-1",
+      "academicYear": 2569,
+      "season": "FIRST",
+      "label": "ภาคต้น ปีการศึกษา 2569",
+      "shortLabel": "1/2569",
+      "status": "CURRENT"
+    },
+    {
+      "id": "2568-2",
+      "academicYear": 2568,
+      "season": "SECOND",
+      "label": "ภาคปลาย ปีการศึกษา 2568",
+      "shortLabel": "2/2568",
+      "status": "ARCHIVED"
+    },
+    {
+      "id": "2568-1",
+      "academicYear": 2568,
+      "season": "FIRST",
+      "label": "ภาคต้น ปีการศึกษา 2568",
+      "shortLabel": "1/2568",
+      "status": "ARCHIVED"
+    },
+    {
+      "id": "2567-2",
+      "academicYear": 2567,
+      "season": "SECOND",
+      "label": "ภาคปลาย ปีการศึกษา 2567",
+      "shortLabel": "2/2567",
+      "status": "ARCHIVED"
+    }
+  ]
+}

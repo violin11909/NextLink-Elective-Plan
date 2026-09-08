@@ -581,3 +581,30 @@ out — but it should never happen without the reader seeing it. */
       .tray-chip { max-width: none; }
       .conflict-side { justify-content: flex-start; }
 }
+
+/* Past terms — the read-only mode of the course list.
+   The term switcher sits with the count chip rather than in the filter row: it
+   picks which set of courses is on the table, and a control that changes what
+   the row count counts should not look like one of the things counted. */
+.term-switcher { display: grid; gap: 6px; justify-items: end; }
+.term-switcher-label { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.term-switcher select { min-width: 244px; min-height: var(--tap-min); padding: 0 12px; border: 1px solid #dce2ec; border-radius: 10px; color: var(--ink); background: #fbfcfe; font-size: 14px; font-weight: 750; }
+.term-switcher select:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); }
+.archive-note { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 0 0 18px; padding: 11px 13px; border: 1px solid #e3e8f1; border-radius: 11px; color: var(--muted); background: #f7f9fc; font-size: 13px; line-height: 1.6; }
+.filters.filters-archive { grid-template-columns: minmax(280px, 2.4fr) minmax(118px, .62fr) minmax(118px, .62fr); }
+/* A row that leads nowhere still has to look like it leads nowhere on hover. */
+.course-link.is-static { cursor: default; }
+.course-link.is-static:hover strong { color: #202c42; }
+
+@media (max-width: 760px) {
+  .term-switcher { width: 100%; justify-items: stretch; }
+      .term-switcher select { width: 100%; min-width: 0; }
+      .filters.filters-archive { grid-template-columns: 1fr; }
+}
+
+/* The count of matching rows and the way to take them with you, on one line.
+   The button sits by the count rather than with the filters because it acts on
+   the result, not on the query. */
+.list-toolbar { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 15px; }
+.list-toolbar .filter-summary { flex: 1 1 260px; margin-top: 0; }
+.secondary-button:disabled { cursor: not-allowed; border-color: #eef1f6; color: #98a0ae; background: #f7f8fa; }

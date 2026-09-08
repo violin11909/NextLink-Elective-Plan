@@ -1,0 +1,265 @@
+{
+  "term": {
+    "id": "2567-2",
+    "academicYear": 2567,
+    "season": "SECOND",
+    "label": "ภาคปลาย ปีการศึกษา 2567",
+    "shortLabel": "2/2567",
+    "status": "ARCHIVED"
+  },
+  "dataset": "nextlink-plan-courses-2567-2",
+  "lastUpdated": "2025-05-16T09:00:00+07:00",
+  "isMock": true,
+  "note": "ข้อมูลตัวอย่างของเทอมที่จบไปแล้ว — ชื่อห้องเป็นชื่อที่ใช้ในตอนนั้น บางห้องถูกยุบหรือเปลี่ยนเลขไปแล้ว",
+  "courses": [
+    {
+      "id": "2567-2-21105801",
+      "courseCode": "21105801",
+      "title": "SW Dev for CMMI Standard",
+      "category": "วิศวกรรมซอฟต์แวร์",
+      "provider": "Soft Square",
+      "instructor": "อาจารย์กานต์ ศรีสุวรรณ",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "WED_AM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 40,
+      "capacity": 38,
+      "weeks": 10,
+      "notes": null
+    },
+    {
+      "id": "2567-2-21105803",
+      "courseCode": "21105803",
+      "title": "Digital & AI Transformation",
+      "category": "ปัญญาประดิษฐ์และข้อมูล",
+      "provider": "Stelligence",
+      "instructor": "อาจารย์ปริญญา วงศ์สถิตย์",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "TUE_PM",
+        "THU_PM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 40,
+      "capacity": 40,
+      "weeks": 10,
+      "notes": null
+    },
+    {
+      "id": "2567-2-21105805",
+      "courseCode": "21105805",
+      "title": "Secure Software & Threat Modeling",
+      "category": "ความมั่นคงปลอดภัยไซเบอร์",
+      "provider": "Cyber Defense Lab",
+      "instructor": "อาจารย์นภัส เจริญรัตน์",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "MON_PM",
+        "WED_AM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 55,
+      "capacity": 50,
+      "weeks": 8,
+      "notes": null
+    },
+    {
+      "id": "2567-2-21105806",
+      "courseCode": "21105806",
+      "title": "Applied Data Analytics",
+      "category": "การวิเคราะห์ข้อมูล",
+      "provider": "DataPulse",
+      "instructor": "อาจารย์วริน แสงทองดี",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "THU_AM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 40,
+      "capacity": 36,
+      "weeks": 10,
+      "notes": null
+    },
+    {
+      "id": "2567-2-21105807",
+      "courseCode": "21105807",
+      "title": "Cloud Architecture & DevOps",
+      "category": "คลาวด์และ DevOps",
+      "provider": "CloudNexa",
+      "instructor": "อาจารย์ธนา ชัยพัฒน์",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "WED_AM",
+        "FRI_PM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 45,
+      "capacity": 43,
+      "weeks": 10,
+      "notes": null
+    },
+    {
+      "id": "2567-2-21105815",
+      "courseCode": "21105815",
+      "title": "Embedded Systems for IoT",
+      "category": "ระบบฝังตัวและ IoT",
+      "provider": "Sensora",
+      "instructor": "อาจารย์พงศ์ ทวีสิน",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "MON_AM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 30,
+      "capacity": 30,
+      "weeks": 9,
+      "notes": null
+    },
+    {
+      "id": "2567-2-21105818",
+      "courseCode": "21105818",
+      "title": "Technical Writing for Engineers",
+      "category": "ธุรกิจและการจัดการ",
+      "provider": "BrightWorks",
+      "instructor": "อาจารย์วิภา นันทวัฒน์",
+      "deliveryMode": "ONLINE",
+      "availability": [
+        "MON_EVE",
+        "THU_EVE"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 0,
+      "capacity": 50,
+      "weeks": 10,
+      "notes": null
+    },
+    {
+      "id": "2567-2-21105790",
+      "courseCode": "21105790",
+      "title": "Agile Delivery Practices",
+      "category": "ธุรกิจและการจัดการ",
+      "provider": "BrightWorks",
+      "instructor": "อาจารย์ภูมิ ไพศาลกิจ",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "FRI_PM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 45,
+      "capacity": 45,
+      "weeks": 10,
+      "notes": null
+    },
+    {
+      "id": "2567-2-21105791",
+      "courseCode": "21105791",
+      "title": "Microservices Architecture",
+      "category": "วิศวกรรมซอฟต์แวร์",
+      "provider": "Playtorium",
+      "instructor": "อาจารย์ศิริ พูนทรัพย์",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "WED_PM",
+        "FRI_AM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 45,
+      "capacity": 44,
+      "weeks": 9,
+      "notes": "เนื้อหาถูกรวมเข้ากับ 21105804 ในปีถัดมา"
+    },
+    {
+      "id": "2567-2-21105792",
+      "courseCode": "21105792",
+      "title": "Big Data Processing with Spark",
+      "category": "การวิเคราะห์ข้อมูล",
+      "provider": "DataPulse",
+      "instructor": "อาจารย์วริน แสงทองดี",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "SAT_AM"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 36,
+      "capacity": 32,
+      "weeks": 10,
+      "notes": "เลิกเปิดหลังจากเทอมนี้ ผู้เรียนน้อยกว่าเกณฑ์"
+    },
+    {
+      "id": "2567-2-21105793",
+      "courseCode": "21105793",
+      "title": "Mobile App Engineering",
+      "category": "วิศวกรรมซอฟต์แวร์",
+      "provider": "Pixel Forge",
+      "instructor": "อาจารย์ธีร์ สมบูรณ์ผล",
+      "deliveryMode": "ON_SITE",
+      "availability": [
+        "THU_EVE"
+      ],
+      "sessionsPerWeek": 1,
+      "minSeats": 30,
+      "capacity": 27,
+      "weeks": 9,
+      "notes": "ปีถัดมาเปลี่ยนเป็น 21105811"
+    }
+  ],
+  "sessions": [
+    {
+      "courseId": "2567-2-21105801",
+      "slotId": "WED_AM",
+      "roomName": "จุฬาพัฒน์ 4 ชั้น 1"
+    },
+    {
+      "courseId": "2567-2-21105803",
+      "slotId": "TUE_PM",
+      "roomName": "จุฬาพัฒน์ 4 ห้อง A ชั้น 3"
+    },
+    {
+      "courseId": "2567-2-21105805",
+      "slotId": "MON_PM",
+      "roomName": "จุฬาพัฒน์ 5 ห้อง 203"
+    },
+    {
+      "courseId": "2567-2-21105806",
+      "slotId": "THU_AM",
+      "roomName": "จุฬาพัฒน์ 4 ห้อง A ชั้น 3"
+    },
+    {
+      "courseId": "2567-2-21105807",
+      "slotId": "FRI_PM",
+      "roomName": "จุฬาพัฒน์ 4 ชั้น 1"
+    },
+    {
+      "courseId": "2567-2-21105815",
+      "slotId": "MON_AM",
+      "roomName": "จุฬาพัฒน์ 4 ห้อง 301 (ผังเดิม)"
+    },
+    {
+      "courseId": "2567-2-21105818",
+      "slotId": "MON_EVE",
+      "roomName": null
+    },
+    {
+      "courseId": "2567-2-21105790",
+      "slotId": "FRI_PM",
+      "roomName": "จุฬาพัฒน์ 5 ห้อง 203"
+    },
+    {
+      "courseId": "2567-2-21105791",
+      "slotId": "WED_PM",
+      "roomName": "จุฬาพัฒน์ 4 ชั้น 1"
+    },
+    {
+      "courseId": "2567-2-21105792",
+      "slotId": "SAT_AM",
+      "roomName": "จุฬาพัฒน์ 5 ห้อง 206"
+    },
+    {
+      "courseId": "2567-2-21105793",
+      "slotId": "THU_EVE",
+      "roomName": "จุฬาพัฒน์ 4 ห้อง B ชั้น 3"
+    }
+  ]
+}
