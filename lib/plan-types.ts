@@ -134,3 +134,83 @@ export type ScheduleResult = {
   assignments: Assignment[];
   unassigned: Unassigned[];
 };
+
+/* ------------------------------------------------------------------ *
+ * Terms
+ * ------------------------------------------------------------------ */
+
+export type TermSeason = "FIRST" | "SECOND" | "SUMMER";
+
+/**
+ * One term of the elective programme, as a reader names it.
+ *
+ * `id` is `"<พ.ศ.>-<1|2|S>"` — sortable as text, and short enough to sit in a
+ * query string. The two labels are stored rather than derived because the
+ * places that show them differ in how much room they have, and a switcher that
+ * abbreviates one term and spells out another reads as two different controls.
+ */
+export type TermMeta = {
+  id: string;
+  /** Thai academic year (พ.ศ.), e.g. 2569. */
+  academicYear: number;
+  season: TermSeason;
+  /** "ภาคต้น ปีการศึกษา 2569" */
+  label: string;
+  /** "1/2569" */
+  shortLabel: string;
+  status: "CURRENT" | "ARCHIVED";
+};
+
+/**
+ * A period a course actually met in a term that has ended.
+ *
+ * This is deliberately *not* an `Assignment`. An assignment is a decision that
+ * is still open — it can be moved, locked, or thrown away by "จัดใหม่" — while
+ * this is a record of what happened, and nothing in the app may change it.
+ *
+ * The room is kept as the name it had that term, not a `roomId`. A past term
+ * must keep reading correctly after a room is renamed, re-numbered or dropped
+ * from `data/plan-rooms.json`, and pointing history at today's room table
+ * would either rewrite the past or break the build the day a room leaves it.
+ */
+export type ArchivedSession = {
+  courseId: string;
+  slotId: SlotId;
+  /** null for an ONLINE course, which occupied no room. */
+  roomName: string | null;
+};
+
+/**
+ * One period a course occupies, flattened from whichever source it came from.
+ *
+ * The current term's periods are `Assignment`s — decisions that can still move
+ * — and a finished term's are `ArchivedSession`s — a record that cannot. Both
+ * are shown in the same two columns of the course list and written to the same
+ * two columns of an export, so they are flattened to this once, rather than
+ * branching on the source in every place that reads them.
+ */
+export type PlacedPeriod = {
+  /** Unique within one course's list; a React key and nothing more. */
+  key: string;
+  slotId: SlotId;
+  /** The room's name, not its id — an archive keeps the name it had then. */
+  roomLabel: string | null;
+  /** Always false for a finished term: a record cannot be unlocked or moved. */
+  locked: boolean;
+};
+
+/**
+ * A finished term: the courses that ran, and the periods they ran in.
+ *
+ * Rooms are not carried here — see `ArchivedSession.roomName`. Neither are
+ * conflicts or gaps: every course in an archive was taught, so there is
+ * nothing left to solve and nothing to recompute.
+ */
+export type ArchivedTerm = {
+  term: TermMeta;
+  dataset: string;
+  lastUpdated: string;
+  isMock: boolean;
+  courses: PlanCourse[];
+  sessions: ArchivedSession[];
+};
