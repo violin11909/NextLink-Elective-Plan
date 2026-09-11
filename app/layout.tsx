@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Noto_Sans_Thai } from "next/font/google";
 import "./globals.css";
+import { PlanProvider } from "@/lib/use-plan-state";
+import { getPlanPayload } from "@/lib/plan-data";
 
 /**
  * Two families, one stack. The browser resolves per glyph, so Latin renders in
@@ -30,7 +32,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="th" className={`${latin.variable} ${thai.variable}`}>
-      <body>{children}</body>
+      <body><PlanProvider payload={getPlanPayload()}>{children}</PlanProvider></body>
     </html>
   );
 }

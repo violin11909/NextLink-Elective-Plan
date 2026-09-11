@@ -60,31 +60,31 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
 
   const inThisRoom = plan.assignments.filter((item) => item.roomId === room.id);
 
-  const placeInSlot = (courseId: string, slotId: SlotId) => {
+  const placeInSlot = async (courseId: string, slotId: SlotId) => {
     const course = coursesById.get(courseId);
     if (!course) return;
     // An online course keeps its "no room" nature even when picked from a room's
     // grid — otherwise it would silently start consuming a room.
-    plan.place(courseId, slotId, course.deliveryMode === "ONLINE" ? null : room.id);
+    if (!await plan.place(courseId, slotId, course.deliveryMode === "ONLINE" ? null : room.id)) return;
     setAssignSlot(null);
     setAnnouncement(`เพิ่ม ${course.title} ลง ${slotLabel(slotId)} แล้ว`);
     show(`เพิ่ม ${course.title} ลง${slotLabel(slotId)}`, plan.undo);
   };
 
-  const moveTo = (slotId: SlotId) => {
+  const moveTo = async (slotId: SlotId) => {
     if (!moving) return;
     const course = coursesById.get(moving.courseId);
-    plan.move(moving.id, slotId, moving.roomId === null ? null : room.id);
+    if (!await plan.move(moving.id, slotId, moving.roomId === null ? null : room.id)) return;
     setMovingId(null);
     setAnnouncement(`ย้าย ${course?.title ?? ""} ไป ${slotLabel(slotId)} แล้ว`);
     show(`ย้าย ${course?.title ?? ""} ไป${slotLabel(slotId)}`, plan.undo);
   };
 
-  const dropOn = (slotId: SlotId, assignmentId: string) => {
+  const dropOn = async (slotId: SlotId, assignmentId: string) => {
     const target = plan.assignments.find((item) => item.id === assignmentId);
     if (!target || target.locked) return;
     const course = coursesById.get(target.courseId);
-    plan.move(assignmentId, slotId, target.roomId === null ? null : room.id);
+    if (!await plan.move(assignmentId, slotId, target.roomId === null ? null : room.id)) return;
     setAnnouncement(`ย้าย ${course?.title ?? ""} ไป ${slotLabel(slotId)} แล้ว`);
     show(`ย้าย ${course?.title ?? ""} ไป${slotLabel(slotId)}`, plan.undo);
   };
@@ -207,9 +207,9 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
                       hasConflict={hasConflict(assignment.id)}
                       draggable
                       onToggleLock={() => plan.toggleLock(assignment.id)}
-                      onMove={() => setMovingId(assignment.id)}
-                      onRemove={() => {
-                        plan.remove(assignment.id);
+                      onMove={assignment.locked ? undefined : () => setMovingId(assignment.id)}
+                      onRemove={async () => {
+                        if (!await plan.remove(assignment.id)) return;
                         setAnnouncement(`เอา ${course.title} ออกจาก ${slotLabel(slotId)} แล้ว`);
                         show(`เอา ${course.title} ออกจากตาราง`, plan.undo);
                       }}
@@ -268,14 +268,14 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
         target={roomForm}
         rooms={plan.rooms}
         assignedCount={plan.assignmentsInRoom(room.id)}
-        onSave={(draft) => {
-          plan.updateRoom(room.id, draft);
+        onSave={async (draft) => {
+          if (!await plan.updateRoom(room.id, draft)) return;
           show(`บันทึก ${draft.name} แล้ว`, plan.undo);
           setRoomForm(null);
         }}
-        onDelete={() => {
+        onDelete={async () => {
           const losing = plan.assignmentsInRoom(room.id);
-          plan.removeRoom(room.id);
+          if (!await plan.removeRoom(room.id)) return;
           setRoomForm(null);
           // The page this is on has just stopped existing, so it leaves before
           // rendering "ไม่พบห้องนี้" at the person who removed it on purpose.
@@ -293,9 +293,9 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
       <BookingDialog
         target={booking}
         rooms={plan.rooms}
-        onSave={(reason) => {
+        onSave={async (reason) => {
           if (!booking) return;
-          plan.setBlocked(room.id, booking.slotId, reason);
+          if (!await plan.setBlocked(room.id, booking.slotId, reason)) return;
           show(
             reason
               ? `กัน${slotLabel(booking.slotId)}ไว้ให้ ${reason}`

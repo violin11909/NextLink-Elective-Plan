@@ -170,6 +170,8 @@ export function getPlanPayload(): PlanPayload {
   if (courseIds.size !== courses.length) throw new Error("data/plan-courses.json: duplicate course id");
 
   return {
+    term: getCurrentTerm(),
+    seedRevision: seedFingerprint(JSON.stringify([coursesJson, roomsJson])),
     dataset: coursesJson.dataset,
     lastUpdated: coursesJson.lastUpdated,
     timezone: coursesJson.timezone,
@@ -177,6 +179,13 @@ export function getPlanPayload(): PlanPayload {
     courses,
     rooms,
   };
+}
+
+/** Changes whenever bundled facts change, independently of human timestamps. */
+function seedFingerprint(text: string): string {
+  let hash = 2166136261;
+  for (let index = 0; index < text.length; index += 1) hash = Math.imul(hash ^ text.charCodeAt(index), 16777619);
+  return (hash >>> 0).toString(16);
 }
 
 /**

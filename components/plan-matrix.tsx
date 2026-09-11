@@ -46,8 +46,8 @@ export function PlanMatrix({
   assignments: Assignment[];
   conflicts: Conflict[];
   unplaced: Array<{ course: PlanCourse; missing: number }>;
-  onPlace: (courseId: string, slotId: SlotId, roomId: string | null) => void;
-  onMove: (assignmentId: string, slotId: SlotId, roomId: string | null) => void;
+  onPlace: (courseId: string, slotId: SlotId, roomId: string | null) => Promise<boolean>;
+  onMove: (assignmentId: string, slotId: SlotId, roomId: string | null) => Promise<boolean>;
   onToggleLock: (assignmentId: string) => void;
   onRemove: (assignmentId: string) => void;
   /** Called when a drop lands somewhere the rules object to, so the page can say so. */
@@ -120,7 +120,7 @@ export function PlanMatrix({
   const roomWouldBeIgnored = (course: PlanCourse, columnKey: string) =>
     course.deliveryMode === "ONLINE" && columnKey !== ONLINE_COLUMN;
 
-  const drop = (slotId: SlotId, columnKey: string, item: Held) => {
+  const drop = async (slotId: SlotId, columnKey: string, item: Held) => {
     const course = coursesById.get(item.kind === "assignment" ? item.courseId : item.id);
     if (!course) return;
     const ignore = item.kind === "assignment" ? item.id : undefined;
@@ -128,8 +128,8 @@ export function PlanMatrix({
     const roomId = roomIdFor(course, columnKey);
     const roomIgnored = roomWouldBeIgnored(course, columnKey);
 
-    if (item.kind === "assignment") onMove(item.id, slotId, roomId);
-    else onPlace(course.id, slotId, roomId);
+    const saved = item.kind === "assignment" ? await onMove(item.id, slotId, roomId) : await onPlace(course.id, slotId, roomId);
+    if (!saved) return;
 
     // Dropped anyway, then told why. Refusing the drop outright would mean a
     // coordinator who has just been given a new time on the phone cannot record

@@ -88,6 +88,8 @@ export type Assignment = {
 };
 
 export type PlanPayload = {
+  term: TermMeta;
+  seedRevision: string;
   dataset: string;
   lastUpdated: string;
   timezone: string;

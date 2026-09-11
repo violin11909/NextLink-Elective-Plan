@@ -7,14 +7,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "node .next/standalone/server.js",
-    "check": "tsc --noEmit && npm run check:css && npm run check:pages && npm run check:scheduler && npm run check:integrity && npm run check:rooms && npm run check:checklist && npm run check:xlsx",
+    "check": "tsc --noEmit && npm run check:css && npm run check:pages && npm run check:scheduler && npm run check:integrity && npm run check:storage && npm run check:rooms && npm run check:checklist && npm run check:xlsx",
     "check:integrity": "node --experimental-strip-types scripts/check-integrity.mjs",
     "check:css": "node scripts/check-css.mjs",
     "check:pages": "node scripts/check-consistency.mjs",
     "check:scheduler": "node --experimental-strip-types scripts/check-scheduler.mjs",
     "check:rooms": "node --experimental-strip-types scripts/check-rooms.mjs",
     "check:checklist": "node --experimental-strip-types scripts/check-checklist.mjs",
-    "check:xlsx": "node --experimental-strip-types scripts/check-xlsx.mjs"
+    "check:xlsx": "node --experimental-strip-types scripts/check-xlsx.mjs",
+    "check:storage": "node --experimental-strip-types scripts/check-storage.mjs"
   },
   "dependencies": {
     "next": "^15.5.0",

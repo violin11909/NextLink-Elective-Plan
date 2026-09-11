@@ -1,5 +1,7 @@
 "use client";
 
+import { usePlanState } from "@/lib/use-plan-state";
+
 import { useMemo, useRef, useEffect } from "react";
 import { BLOCKER_LABELS } from "@/lib/blocker-labels.ts";
 import { formatNumber } from "@/lib/format";
@@ -33,6 +35,7 @@ export function AssignDialog({
   onPick: (courseId: string) => void;
   onClose: () => void;
 }) {
+  const plan = usePlanState();
   const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
@@ -111,6 +114,7 @@ export function AssignDialog({
         <button className="icon-button" type="button" onClick={onClose} aria-label="ปิดหน้าต่าง">×</button>
       </div>
       <div className="dialog-content">
+        {plan.error ? <p className="room-form-error" role="alert">{plan.error}</p> : null}
         <div className="detail-section">
           <h3>บริษัทแจ้งว่าสะดวกคาบนี้</h3>
           {options.offered.length === 0 ? (

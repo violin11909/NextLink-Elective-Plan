@@ -63,16 +63,14 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
     safeFollowUpPage * FOLLOW_UP_PAGE_SIZE,
   );
 
-  const applySuggestion = (suggestion: Suggestion) => {
+  const applySuggestion = async (suggestion: Suggestion) => {
     if (suggestion.kind === "UNLOCK_COURSE") {
-      for (const item of plan.assignments) {
-        if (item.courseId === suggestion.courseId && item.locked) plan.toggleLock(item.id);
-      }
+      if (!await plan.unlockCourse(suggestion.courseId)) return;
       show(`ปลดล็อก ${coursesById.get(suggestion.courseId)?.title ?? ""} แล้ว — กดจัดตารางอัตโนมัติอีกครั้ง`, plan.undo);
       return;
     }
     if (suggestion.kind === "REDUCE_CAPACITY") {
-      plan.setCourseField(suggestion.courseId, { minSeats: suggestion.seats, capacity: suggestion.seats });
+      if (!await plan.setCourseField(suggestion.courseId, { minSeats: suggestion.seats, capacity: suggestion.seats })) return;
       show(`ปรับจำนวนที่รับเป็น ${suggestion.seats} คนแล้ว`, plan.undo);
       return;
     }
@@ -110,9 +108,10 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
     if (Math.abs(now - target) > 1) window.scrollBy(0, now - target);
   }, [plan.assignments, plan.conflicts]);
 
-  const runPlan = () => {
+  const runPlan = async () => {
     anchorRef.current = boardRef.current?.getBoundingClientRect().top ?? null;
-    const result = plan.runAutoAssign();
+    const result = await plan.runAutoAssign();
+    if (!result) return;
     show(
       result.unassigned.length
         ? `จัดตารางแล้ว · ยังเหลือ ${formatNumber(result.unassigned.length)} วิชาที่ลงไม่ได้`
@@ -244,11 +243,11 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
             <button
               className="secondary-button"
               type="button"
-              onClick={() => { plan.clearUnlocked(); show("ล้างคาบที่ยังไม่ล็อกแล้ว", plan.undo); }}
+              onClick={async () => { if (!await plan.clearUnlocked()) return; show("ล้างคาบที่ยังไม่ล็อกแล้ว", plan.undo); }}
             >
               ล้างที่ยังไม่ล็อก
             </button>
-            <button className="primary-button" type="button" onClick={runPlan}>
+            <button className="primary-button" type="button" disabled={plan.status === "saving"} onClick={runPlan}>
               จัดตารางอัตโนมัติ
             </button>
           </div>
@@ -262,7 +261,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           onPlace={plan.place}
           onMove={plan.move}
           onToggleLock={plan.toggleLock}
-          onRemove={(id) => { plan.remove(id); show("เอาวิชาออกจากตารางแล้ว", plan.undo); }}
+          onRemove={async (id) => { if (!await plan.remove(id)) return; show("เอาวิชาออกจากตารางแล้ว", plan.undo); }}
           onBlockedDrop={(title, slotId, blockers, roomIgnored) =>
             show(
               // An online class has no room to give, so the room it was dropped on
@@ -287,21 +286,21 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
         target={roomForm}
         rooms={plan.rooms}
         assignedCount={roomForm?.room ? plan.assignmentsInRoom(roomForm.room.id) : 0}
-        onSave={(draft) => {
+        onSave={async (draft) => {
           if (roomForm?.room) {
-            plan.updateRoom(roomForm.room.id, draft);
+            if (!await plan.updateRoom(roomForm.room.id, draft)) return;
             show(`บันทึก ${draft.name} แล้ว`, plan.undo);
           } else {
-            plan.addRoom(draft);
+            if (!await plan.addRoom(draft)) return;
             show(`เพิ่ม ${draft.name} เข้าตารางแล้ว`, plan.undo);
           }
           setRoomForm(null);
         }}
-        onDelete={() => {
+        onDelete={async () => {
           const room = roomForm?.room;
           if (!room) return;
           const losing = plan.assignmentsInRoom(room.id);
-          plan.removeRoom(room.id);
+          if (!await plan.removeRoom(room.id)) return;
           show(
             losing > 0
               ? `ลบ ${room.name} แล้ว · ${formatNumber(losing)} คาบกลับไปเป็นวิชาที่ยังไม่ได้จัด`
@@ -316,9 +315,9 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
       <BookingDialog
         target={booking}
         rooms={plan.rooms}
-        onSave={(reason) => {
+        onSave={async (reason) => {
           if (!booking) return;
-          plan.setBlocked(booking.room.id, booking.slotId, reason);
+          if (!await plan.setBlocked(booking.room.id, booking.slotId, reason)) return;
           show(
             reason
               ? `กัน ${booking.room.name} ${slotLabel(booking.slotId)} ไว้ให้ ${reason}`

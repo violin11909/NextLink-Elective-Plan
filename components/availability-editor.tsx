@@ -53,13 +53,10 @@ export function AvailabilityEditor({ payload }: { payload: PlanPayload }) {
     });
   }, [plan.courses, deferredSearch, deferredProvider, day, period]);
 
-  const toggleSlot = (courseId: string, slotId: SlotId) => {
+  const toggleSlot = async (courseId: string, slotId: SlotId) => {
     const course = plan.courses.find((item) => item.id === courseId);
     if (!course) return;
-    const next = course.availability.includes(slotId)
-      ? course.availability.filter((item) => item !== slotId)
-      : [...course.availability, slotId];
-    plan.setAvailability(courseId, next);
+    if (!await plan.toggleAvailability(courseId, slotId)) return;
     show(
       `${course.title}: ${course.availability.includes(slotId) ? "เอา" : "เพิ่ม"}${slotLabel(slotId)}`,
       plan.undo,

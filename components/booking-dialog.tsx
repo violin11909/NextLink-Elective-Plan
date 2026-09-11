@@ -1,5 +1,7 @@
 "use client";
 
+import { usePlanState } from "@/lib/use-plan-state";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { slotLabelWithTime, type SlotId } from "@/lib/slots.ts";
 import type { PlanRoom } from "@/lib/plan-types.ts";
@@ -33,6 +35,7 @@ export function BookingDialog({
   onSave: (reason: string | null) => void;
   onClose: () => void;
 }) {
+  const plan = usePlanState();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [reason, setReason] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -77,6 +80,7 @@ export function BookingDialog({
       </div>
 
       <div className="dialog-content">
+        {plan.error ? <p className="room-form-error" role="alert">{plan.error}</p> : null}
         <form className="room-form" onSubmit={(event) => { event.preventDefault(); submit(); }}>
           <label className="room-form-wide">
             กันคาบนี้ไว้ให้

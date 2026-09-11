@@ -1,5 +1,7 @@
 "use client";
 
+import { usePlanState } from "@/lib/use-plan-state";
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatNumber } from "@/lib/format";
 import { roomDraftFrom, validateRoomDraft, type RoomDraft } from "@/lib/rooms.ts";
@@ -48,6 +50,7 @@ export function RoomDialog({
   onDelete: () => void;
   onClose: () => void;
 }) {
+  const plan = usePlanState();
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [draft, setDraft] = useState<RoomDraft>(NEW_ROOM);
   const [error, setError] = useState<string | null>(null);
@@ -97,6 +100,7 @@ export function RoomDialog({
       </div>
 
       <div className="dialog-content">
+        {plan.error ? <p className="room-form-error" role="alert">{plan.error}</p> : null}
         {/* A plain form, submitted by its own button: Enter in any field then
             does what Enter in a form does, without a keydown handler per input. */}
         <form
