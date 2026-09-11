@@ -1,3 +1,5 @@
+> บันทึกการออกแบบรุ่นแรก เอกสารนี้มีตัวอย่างและจำนวนห้องในช่วงพัฒนา ไม่ใช่สเปกปัจจุบัน ดู README.md และ data-model.md สำหรับ storage v3, shared provider, worker, กฎ placement และ production build ที่ใช้งานอยู่
+
 # แผนพัฒนา: NextLink Elective Schedule Plan
 
 > **สถานะ: สร้างเสร็จแล้วทั้ง 6 เฟส** — เอกสารนี้เก็บไว้เป็นบันทึกการตัดสินใจ
