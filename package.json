@@ -5,7 +5,7 @@
   "description": "NextLink elective-course schedule planner built with Next.js",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "next build && node scripts/package-standalone.mjs",
     "start": "node .next/standalone/server.js",
     "check": "tsc --noEmit && npm run check:css && npm run check:pages && npm run check:scheduler && npm run check:integrity && npm run check:storage && npm run check:metrics && npm run check:rooms && npm run check:checklist && npm run check:xlsx",
     "check:integrity": "node --experimental-strip-types scripts/check-integrity.mjs",
@@ -16,10 +16,11 @@
     "check:checklist": "node --experimental-strip-types scripts/check-checklist.mjs",
     "check:xlsx": "node --experimental-strip-types scripts/check-xlsx.mjs",
     "check:storage": "node --experimental-strip-types scripts/check-storage.mjs",
-    "check:metrics": "node --experimental-strip-types scripts/check-metrics.mjs"
+    "check:metrics": "node --experimental-strip-types scripts/check-metrics.mjs",
+    "check:browser": "node scripts/check-browser.mjs"
   },
   "dependencies": {
-    "next": "^15.5.0",
+    "next": "15.5.25",
     "react": "^19.1.0",
     "react-dom": "^19.1.0"
   },
@@ -27,6 +28,14 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "playwright": "1.63.0",
     "typescript": "^5.8.0"
+  },
+  "overrides": {
+    "postcss": "8.5.28",
+    "sharp": "0.35.4"
+  },
+  "engines": {
+    "node": ">=22.18.0"
   }
 }
