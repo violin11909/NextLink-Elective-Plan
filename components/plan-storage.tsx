@@ -21,8 +21,9 @@ export function PlanStorage() {
     <section className="plan-storage" aria-label="การบันทึกแผน">
       <div className="plan-storage-actions">
         <span role="status">
-          {plan.status === "loading" ? "กำลังโหลดแผน…" : plan.status === "saving" ? "กำลังบันทึก…" : plan.status === "error" ? "แผนยังบันทึกไม่สำเร็จ" : plan.editedAt ? "บันทึกแล้วในเบราว์เซอร์นี้" : "ยังไม่มีการแก้ไขแผน"}
+          {plan.planning ? "กำลังจัดตาราง…" : plan.status === "loading" ? "กำลังโหลดแผน…" : plan.status === "saving" ? "กำลังบันทึก…" : plan.status === "error" ? "แผนยังบันทึกไม่สำเร็จ" : plan.editedAt ? "บันทึกแล้วในเบราว์เซอร์นี้" : "ยังไม่มีการแก้ไขแผน"}
         </span>
+        {plan.planning ? <button type="button" className="secondary-button" onClick={plan.cancelPlanning}>ยกเลิกการจัดตาราง</button> : null}
         <button type="button" className="secondary-button" disabled={!plan.ready} onClick={backup}>สำรองแผน JSON</button>
         <button type="button" className="secondary-button" disabled={!plan.ready || plan.recoveryRaw !== null} onClick={() => file.current?.click()}>นำเข้าแผน</button>
         <button type="button" className="secondary-button" disabled={!plan.canUndo || plan.status === "saving"} onClick={() => void plan.undo()}>เลิกทำรายการล่าสุด</button>

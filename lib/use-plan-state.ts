@@ -1,10 +1,11 @@
 "use client";
 
-import { createContext, createElement, useContext, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, createElement, useContext, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { readChecklist, type CourseChecklist } from "./checklist.ts";
 import { detectConflicts } from "./conflicts.ts";
 import { addRoom as addRoomTo, deleteRoom, mergeRooms, patchRoom, setRoomBlocked, validateRoomDraft, type RoomDraft, type RoomOverride } from "./rooms.ts";
-import { explainFailure, planSchedule, sortAssignments } from "./scheduler.ts";
+import { explainFailure, sortAssignments } from "./scheduler.ts";
+import { scheduleInWorker } from "./schedule-worker-client.ts";
 import { changeAssignmentTime, moveAssignment, placeAssignment } from "./assignments.ts";
 import { decodePlan, emptyPlanData, type CourseOverride, type PlanDocument } from "./plan-document.ts";
 import { browserPersistence, PlanStore } from "./plan-store.ts";
@@ -24,6 +25,8 @@ function effective(payload: PlanPayload, document: PlanDocument) {
 
 /** Commands receive the newest document under a cross-tab lock, not a render's stale copy. */
 function useController(payload: PlanPayload) {
+  const planningAbort = useRef<AbortController | null>(null);
+  const [planning, setPlanning] = useState(false);
   const [store] = useState(() => new PlanStore(payload, browserPersistence()));
   const snapshot = useSyncExternalStore(store.subscribe, store.getSnapshot, store.getSnapshot);
   useEffect(() => {
@@ -45,14 +48,21 @@ function useController(payload: PlanPayload) {
 
   const commands = useMemo(() => ({
     runAutoAssign: async (): Promise<ScheduleResult | null> => {
+      if (planningAbort.current) return null;
+      const controller = new AbortController();
+      planningAbort.current = controller;
+      setPlanning(true);
       let result: ScheduleResult | null = null;
-      const saved = await store.mutate((current) => {
-        const input = effective(payload, current);
-        result = planSchedule({ ...input, locked: input.assignments.filter((item) => item.locked) });
-        return { ...current, assignments: result.assignments };
-      });
-      return saved ? result : null;
+      try {
+        const saved = await store.mutate(async (current) => {
+          const input = effective(payload, current);
+          result = await scheduleInWorker({ ...input, locked: input.assignments.filter((item) => item.locked) }, controller.signal);
+          return { ...current, assignments: result.assignments };
+        });
+        return saved ? result : null;
+      } finally { planningAbort.current = null; setPlanning(false); }
     },
+    cancelPlanning: () => planningAbort.current?.abort(),
     place: (courseId: string, slotId: SlotId, roomId: string | null) => store.mutate((current) => ({
       ...current, assignments: sortAssignments(placeAssignment({ ...effective(payload, current), courseId, slotId, roomId })),
     })),
@@ -102,7 +112,7 @@ function useController(payload: PlanPayload) {
   }), [store, payload]);
 
   return {
-    ...commands, ...snapshot, courses, rooms, assignments, conflicts, gaps, editedAt: document.editedAt,
+    ...commands, ...snapshot, planning, courses, rooms, assignments, conflicts, gaps, editedAt: document.editedAt,
     undo: store.undo, retry: store.retry, reload: store.reload, recoverEmpty: store.recoverEmpty,
     checklistFor: (id: string) => readChecklist(document.checklists[id]),
     assignmentsInRoom: (id: string) => assignments.filter((item) => item.roomId === id).length,
