@@ -130,7 +130,11 @@ h1 { margin: 4px 0 0; font-size: 21px; letter-spacing: -.02em; }
 .queue-filter-button strong { color: #3d4b65; font-size: 12px; }
 .queue-filter-button:hover, .queue-filter-button.is-active { border-color: #adc2eb; color: #2f5cb8; background: #f4f7ff; }
 .queue-filter-button.is-active strong { color: #2f5cb8; }
-.follow-up-icon { display: grid; flex: 0 0 auto; place-items: center; aspect-ratio: 1 / 1; height: 100%; border-radius: 8px; color: #b93445; background: #fff0f1; font-weight: 850; }
+/* A fixed square, sized to itself. It used to be `height: 100%` with an
+   aspect-ratio, which made the icon as wide as the row was tall — so a row
+   whose title wrapped grew a 50px icon inside a 25px column and pushed it
+   over the text beside it. */
+.follow-up-icon { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; color: #b93445; background: #fff0f1; font-size: 14px; font-weight: 850; }
 .follow-up-icon.queue-waiting { color: #8f5410; background: #fff3e5; }.follow-up-icon.queue-progress { color: #3568c4; background: #edf3ff; }
 .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 7px; border-top: 1px solid #edf0f4; }
 .pager-range { color: var(--muted); font-size: 13px; }
@@ -230,7 +234,7 @@ the thing overflowing. The last fields and the save button were unreachable. */
    scrolls at every width — see .matrix-scroll — so this only decides how much
    of the week fits before it has to. */
 @media (max-width: 1100px) {
-  .matrix-room, .matrix-cell { min-width: 150px; }
+  .matrix-room, .matrix-cell { min-width: 116px; }
       .matrix-corner, .matrix-slot { width: 88px; min-width: 88px; }
 }
 
@@ -349,8 +353,8 @@ action on this page and belongs one press from the thing it applies to. */
 act on it — a list of problems with no handles is the failure mode this
 panel exists to avoid. */
 .conflict-list { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
-.conflict-row { display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; align-items: start; gap: 30px; padding: 12px; border: 1px solid #edf0f5; border-radius: 12px; background: #fcfcfe; }
-.conflict-row:has(> .conflict-copy:last-child) { grid-template-columns: 25px minmax(0, 1fr); }
+.conflict-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: start; gap: 10px 16px; padding: 12px; border: 1px solid #edf0f5; border-radius: 12px; background: #fcfcfe; }
+.conflict-row:has(> .conflict-copy:last-child) { grid-template-columns: 26px minmax(0, 1fr); }
 .conflict-copy { display: grid; min-width: 0; gap: 5px; }
 .conflict-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
 .conflict-copy strong { color: #283349; font-size: 14px; line-height: 1.4; }
@@ -363,7 +367,7 @@ panel exists to avoid. */
 .conflict-provider { color: #4a5766; font-weight: 800; }
 .conflict-slot-list { display: grid; gap: 4px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted-2); font-size: 12px; line-height: 1.5; }
 .conflict-slot-name { margin-right: 7px; color: #4a5766; font-weight: 800; }
-.conflict-side { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.conflict-side { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; gap: 7px; padding-left: 8px; }
 
 .room-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .room-card { display: grid; align-content: start; gap: 7px; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: #fff; text-decoration: none; color: inherit; transition: transform .15s, border-color .15s; }
@@ -430,7 +434,7 @@ out — but it should never happen without the reader seeing it. */
           .week-day-card h4 { margin: 0; color: #26324a; font-size: 15px; }
           .week-day-period { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: start; gap: 10px; }
           .week-day-slot { min-width: 0; }
-          .conflict-row { grid-template-columns: 25px minmax(0, 1fr); }
+          .conflict-row { grid-template-columns: 26px minmax(0, 1fr); }
           .room-grid { grid-template-columns: 1fr; }
           .assign-option { grid-template-columns: 1fr; }
           .assign-option-warnings { justify-content: flex-start; max-width: none; }
@@ -446,7 +450,7 @@ out — but it should never happen without the reader seeing it. */
 /* The board is the widest thing in the product and the page column is sized for
    reading prose. Ten room columns inside 880px means scrolling sideways to see
    the week, so this one panel breaks out of the column and takes the viewport. */
-.matrix-panel { margin-inline: calc((100% - min(96vw, 1560px)) / 2); }
+.matrix-panel { margin-inline: calc((100% - min(98vw, 2100px)) / 2); }
 /* `min-width: 0` on both, or the board does not scroll — it pushes.
    A grid item defaults to min-width:auto, so the max-content table inside made
    .matrix-scroll grow past the panel instead of scrolling inside it, and the
@@ -499,7 +503,11 @@ out — but it should never happen without the reader seeing it. */
    under them, which is the only way a 16-column board stays readable. */
 .matrix-scroll { position: relative; min-width: 0; max-height: min(78vh, 900px); overflow: auto; border: 1px solid var(--line); border-radius: 13px; }
 .matrix { width: max-content; min-width: 100%; table-layout: auto; border-collapse: separate; border-spacing: 0; }
-.matrix-room, .matrix-cell { min-width: 158px; max-width: 210px; }
+/* Back to roughly the width the old fixed-layout board gave each column.
+   Wider columns read better one at a time and worse as a week: every extra
+   pixel per column is another column pushed off the screen, and the board is
+   for comparing rooms against each other. */
+.matrix-room, .matrix-cell { min-width: 124px; max-width: 152px; }
 /* The shared table header style is built for a wide reference table: nowrap,
    uppercase, wide tracking. On a fixed-layout board that meant the room names
    were cut off mid-word instead of wrapping onto a second line. */
@@ -589,7 +597,9 @@ out — but it should never happen without the reader seeing it. */
       .picker-bar { padding: 11px 16px 13px; }
       .picker-fab { right: 14px; bottom: 14px; }
       .tray-chip { max-width: none; }
-      .conflict-side { justify-content: flex-start; }
+      /* Two columns on a phone, so the actions take their own full-width row
+         rather than being wrung out in the 26px icon column. */
+      .conflict-side { grid-column: 1 / -1; justify-content: flex-start; padding-left: 0; }
 }
 
 /* Past terms — the read-only mode of the course list.
@@ -671,3 +681,29 @@ out — but it should never happen without the reader seeing it. */
       .dialog-actions { align-items: stretch; flex-direction: column; }
       .dialog-actions-end { margin-left: 0; }
 }
+
+/* Two views of one list: the schedule facts, and the paperwork behind them */
+.view-switch { display: inline-flex; gap: 4px; margin: -2px 0 16px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: #f4f6fa; }
+.view-switch-button { min-height: 34px; padding: 6px 14px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; font-size: 13px; font-weight: 800; }
+.view-switch-button:hover { color: #2f5cb8; }
+.view-switch-button.is-active { color: #203252; background: #fff; box-shadow: 0 1px 3px rgba(30, 49, 80, .12); }
+/* Sized to sit inside the panel rather than run off the right of it. Nine
+   columns fit because only the two letter columns carry a long label —
+   "กำลังดำเนินการ", which must never be cut to "กำลังดำเนิน…" — and the rest
+   hold two short words. Tight cell padding buys the rest. */
+.checklist-table { min-width: 1120px; }
+/* The reference table's header style shouts in capitals, which is fine for
+   Thai and wrong for "instructor" and "Join MCV" — those are names of
+   things in MCV, and MCV does not write them that way. */
+.checklist-table th { text-transform: none; white-space: normal; }
+.checklist-table th, .checklist-table td { padding-right: 7px; padding-left: 7px; }
+.checklist-table td { padding-top: 9px; padding-bottom: 9px; vertical-align: middle; }
+.checklist-table tr.is-complete td { background: #f7fdfa; }
+.checklist-select { width: 100%; min-width: 96px; min-height: 36px; padding: 0 8px; border: 1px solid #dce2ec; border-radius: 8px; font-size: 12px; font-weight: 800; }
+.checklist-select:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); outline: 0; }
+/* A join code is copied character by character into another site, so it is
+   shown in a face where 0 and O are not the same shape. */
+.checklist-code { width: 100%; min-width: 104px; min-height: 36px; padding: 0 9px; border: 1px solid #dce2ec; border-radius: 8px; color: var(--ink); background: #fbfcfe; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.checklist-code:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); outline: 0; }
+/* The two letter columns, whose longest answer is three syllables longer. */
+.checklist-select.is-wide { min-width: 124px; }

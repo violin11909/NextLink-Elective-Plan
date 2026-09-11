@@ -8,7 +8,24 @@ import { Pager } from "@/components/pager";
 import { PlanShell } from "@/components/plan-shell";
 import { ResultAnnouncer } from "@/components/result-announcer";
 import { SlotFilters, matchesSlotFilter } from "@/components/slot-filters";
-import { buildCourseWorkbook, courseFileName, type ExportContext } from "@/lib/course-export.ts";
+import {
+  CHECKLIST_FIELDS,
+  DONE_LABELS,
+  DONE_ORDER,
+  RECEIPT_LABELS,
+  RECEIPT_ORDER,
+  checklistPatch,
+  checklistTone,
+  isChecklistComplete,
+  type ChecklistField,
+  type CourseChecklist,
+} from "@/lib/checklist.ts";
+import {
+  buildChecklistWorkbook,
+  buildCourseWorkbook,
+  courseFileName,
+  type ExportContext,
+} from "@/lib/course-export.ts";
 import { formatNumber } from "@/lib/format";
 import { DAY_COLORS } from "@/lib/day-colors.ts";
 import { DAY_LABELS, PERIODS, parseSlotId, slotLabel, type DayKey, type PeriodKey, type SlotId } from "@/lib/slots.ts";
@@ -17,6 +34,9 @@ import { usePlanState } from "@/lib/use-plan-state";
 import { useUrlFilters } from "@/lib/use-url-filters";
 
 type PlacementFilter = "all" | "placed" | "unplaced";
+/** Which table the page is showing: the schedule facts, or the paperwork. */
+type ViewMode = "table" | "checklist";
+type ChecklistFilter = "all" | "incomplete" | "complete";
 
 const PAGE_SIZE = 10;
 
@@ -50,11 +70,23 @@ export function CourseList({
   const [day, setDay] = useState<DayKey | "">("");
   const [period, setPeriod] = useState<PeriodKey | "">("");
   const [placement, setPlacement] = useState<PlacementFilter>("all");
+  const [view, setView] = useState<ViewMode>("table");
+  const [checklistFilter, setChecklistFilter] = useState<ChecklistFilter>("all");
   const [page, setPage] = useState(1);
   const deferredSearch = useDeferredValue(search);
 
   /** null while the current term is selected — the planner's own data. */
   const archive = useMemo(() => archives.find((item) => item.term.id === termId) ?? null, [archives, termId]);
+
+  /**
+   * The checklist belongs to the term being worked on.
+   *
+   * A finished term's paperwork was either done or it was not, and either way
+   * nobody is going to tick a box about it now — so a past term shows the
+   * plain table and the switch disappears rather than offering a form that
+   * saves answers about a term nobody can act on.
+   */
+  const checklistView = view === "checklist" && !archive;
 
   useUrlFilters(
     {
@@ -63,12 +95,16 @@ export function CourseList({
       period,
       placement: placement === "all" ? "" : placement,
       term: termId === currentTerm.id ? "" : termId,
+      view: checklistView ? "checklist" : "",
+      done: checklistView && checklistFilter !== "all" ? checklistFilter : "",
     },
     (found) => {
       if (found.q) setSearch(found.q);
       if (found.day) setDay(found.day as DayKey);
       if (found.period) setPeriod(found.period as PeriodKey);
       if (found.placement === "placed" || found.placement === "unplaced") setPlacement(found.placement);
+      if (found.view === "checklist") setView("checklist");
+      if (found.done === "incomplete" || found.done === "complete") setChecklistFilter(found.done);
       // An id from an old link may name a term that is no longer published;
       // silently staying on the current term beats an empty page.
       if (found.term && terms.some((term) => term.id === found.term)) setTermId(found.term);
@@ -117,8 +153,15 @@ export function CourseList({
     // they could look it up, which is a question the box can answer itself.
     const needle = deferredSearch.trim().toLowerCase();
     return courses
-      .map((course) => ({ course, placed: periodsByCourse.get(course.id) ?? [] }))
-      .filter(({ course, placed }) => {
+      .map((course) => ({
+        course,
+        placed: periodsByCourse.get(course.id) ?? [],
+        // Read for every row even in the plain table: it costs a lookup, and
+        // it keeps the two views reading from one source rather than each
+        // deciding for itself what "this course's checklist" means.
+        checklist: plan.checklistFor(course.id),
+      }))
+      .filter(({ course, placed, checklist }) => {
         if (!matchesSlotFilter(course.availability, day, period)) return false;
         // Only the current term has a "still to do" state; in a finished term
         // every course listed is a course that ran.
@@ -126,13 +169,29 @@ export function CourseList({
           if (placement === "placed" && placed.length < course.sessionsPerWeek) return false;
           if (placement === "unplaced" && placed.length >= course.sessionsPerWeek) return false;
         }
+        if (checklistView && checklistFilter !== "all") {
+          const complete = isChecklistComplete(checklist);
+          if (checklistFilter === "complete" && !complete) return false;
+          if (checklistFilter === "incomplete" && complete) return false;
+        }
         if (!needle) return true;
         return [course.title, course.courseCode, course.provider, course.instructor, course.category]
           .join(" ")
           .toLowerCase()
           .includes(needle);
       });
-  }, [courses, periodsByCourse, archive, deferredSearch, day, period, placement]);
+  }, [
+    courses,
+    periodsByCourse,
+    archive,
+    deferredSearch,
+    day,
+    period,
+    placement,
+    checklistView,
+    checklistFilter,
+    plan,
+  ]);
 
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const safePage = Math.min(page, pageCount);
@@ -147,11 +206,18 @@ export function CourseList({
           onClear: () => { setDay(""); setPeriod(""); },
         }
       : null,
-    !archive && placement !== "all"
+    !archive && !checklistView && placement !== "all"
       ? {
           label: "สถานะ",
           value: placement === "placed" ? "จัดแล้ว" : "ยังไม่ได้จัด",
           onClear: () => setPlacement("all"),
+        }
+      : null,
+    checklistView && checklistFilter !== "all"
+      ? {
+          label: "เช็กลิสต์",
+          value: checklistFilter === "complete" ? "ครบแล้ว" : "ยังทำไม่ครบ",
+          onClear: () => setChecklistFilter("all"),
         }
       : null,
   ].filter((item): item is NonNullable<typeof item> => item !== null);
@@ -161,6 +227,7 @@ export function CourseList({
     setDay("");
     setPeriod("");
     setPlacement("all");
+    setChecklistFilter("all");
   };
 
   /** The term is a scope, not a filter: the search box narrows within it. */
@@ -168,6 +235,41 @@ export function CourseList({
     setTermId(nextId);
     setPage(1);
     setPlacement("all");
+  };
+
+  const changeView = (next: ViewMode) => {
+    setView(next);
+    setPage(1);
+  };
+
+  /** One cell of the checklist table: a status to pick, or a code to type. */
+  const checklistControl = (courseId: string, courseTitle: string, checklist: CourseChecklist, field: ChecklistField) => {
+    if (field.kind === "code") {
+      return (
+        <input
+          className="checklist-code"
+          type="text"
+          value={checklist.mcvJoinCode}
+          placeholder="ยังไม่มีรหัส"
+          aria-label={`${field.label} — ${courseTitle}`}
+          onChange={(event) => plan.setChecklistField(courseId, checklistPatch(field, event.target.value))}
+        />
+      );
+    }
+    const options = field.kind === "receipt" ? RECEIPT_ORDER : DONE_ORDER;
+    const labels: Record<string, string> = field.kind === "receipt" ? RECEIPT_LABELS : DONE_LABELS;
+    return (
+      <select
+        className={`checklist-select${field.kind === "receipt" ? " is-wide" : ""} tone-${checklistTone(checklist, field)}`}
+        value={checklist[field.key]}
+        aria-label={`${field.label} — ${courseTitle}`}
+        onChange={(event) => plan.setChecklistField(courseId, checklistPatch(field, event.target.value))}
+      >
+        {options.map((option) => (
+          <option key={option} value={option}>{labels[option]}</option>
+        ))}
+      </select>
+    );
   };
 
   /**
@@ -190,13 +292,17 @@ export function CourseList({
       exportedAt: new Date(),
     };
 
-    const blob = new Blob([buildCourseWorkbook(context, rows)], {
+    // The button exports what is on screen. Someone who switched to the
+    // checklist wants the checklist; handing them the schedule columns would
+    // be the app disagreeing with itself about which table it is showing.
+    const bytes = checklistView ? buildChecklistWorkbook(context, rows) : buildCourseWorkbook(context, rows);
+    const blob = new Blob([bytes], {
       type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url;
-    link.download = courseFileName(context);
+    link.download = courseFileName(context, checklistView ? "checklist" : "table");
     document.body.appendChild(link);
     link.click();
     link.remove();
@@ -245,6 +351,31 @@ export function CourseList({
       </div>
 
       <section className="panel table-panel">
+        {/* Two tables, one page. The schedule facts and the paperwork are
+            about the same list of courses and are read by the same person on
+            the same afternoon, so they share the search box, the term and the
+            export button rather than living on two pages that drift apart.
+            A finished term has no paperwork left to do, so it gets no switch. */}
+        {archive ? null : (
+          <div className="view-switch" role="group" aria-label="รูปแบบตาราง">
+            <button
+              className={`view-switch-button${checklistView ? "" : " is-active"}`}
+              type="button"
+              aria-pressed={!checklistView}
+              onClick={() => changeView("table")}
+            >
+              ตารางรายวิชา
+            </button>
+            <button
+              className={`view-switch-button${checklistView ? " is-active" : ""}`}
+              type="button"
+              aria-pressed={checklistView}
+              onClick={() => changeView("checklist")}
+            >
+              เช็กลิสต์งานเอกสาร
+            </button>
+          </div>
+        )}
         <div className={`filters ${archive ? "filters-archive" : "filters-list"}`}>
           <label>
             ค้นหาวิชา ผู้สอน บริษัท หรือหมวด
@@ -256,8 +387,21 @@ export function CourseList({
             />
           </label>
           {/* Every course in a finished term ran, so a "จัดครบแล้ว / ยังจัดไม่ครบ"
-              control there would be a filter with one possible answer. */}
-          {archive ? null : (
+              control there would be a filter with one possible answer. In the
+              checklist the same slot asks the question that view is for. */}
+          {archive ? null : checklistView ? (
+            <label>
+              สถานะเช็กลิสต์
+              <select
+                value={checklistFilter}
+                onChange={(event) => { setChecklistFilter(event.target.value as ChecklistFilter); setPage(1); }}
+              >
+                <option value="all">ทั้งหมด</option>
+                <option value="incomplete">ยังทำไม่ครบ</option>
+                <option value="complete">ครบแล้ว</option>
+              </select>
+            </label>
+          ) : (
             <label>
               สถานะการจัด
               <select
@@ -296,6 +440,40 @@ export function CourseList({
         ) : (
           <>
             <div className="table-wrap">
+              {checklistView ? (
+              /* Course and company stay, so a row is still recognisable as the
+                 same row in either view; everything after them is the work
+                 itself. Seven controls in a row is a lot of table, which is
+                 why the columns are headed with a phrase and the full step is
+                 on the control's own label for anyone who needs it read out. */
+              <table className="checklist-table">
+                <thead>
+                  <tr>
+                    <th scope="col">วิชา</th>
+                    <th scope="col">บริษัท</th>
+                    {CHECKLIST_FIELDS.map((field) => (
+                      <th scope="col" key={field.key} title={field.label}>{field.short}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {visible.map(({ course, checklist }) => (
+                    <tr key={course.id} className={isChecklistComplete(checklist) ? "is-complete" : undefined}>
+                      <td>
+                        <Link className="course-link" href={`/courses?q=${encodeURIComponent(course.title)}`}>
+                          <strong>{course.title}</strong>
+                          <span className="course-code">{course.courseCode} · {course.category}</span>
+                        </Link>
+                      </td>
+                      <td><span className="schedule-text">{course.provider}</span></td>
+                      {CHECKLIST_FIELDS.map((field) => (
+                        <td key={field.key}>{checklistControl(course.id, course.title, checklist, field)}</td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              ) : (
               <table>
                 <thead>
                   <tr>
@@ -420,6 +598,7 @@ export function CourseList({
                   ))}
                 </tbody>
               </table>
+              )}
             </div>
             <Pager
               page={safePage}

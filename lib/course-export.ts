@@ -1,3 +1,10 @@
+import {
+  CHECKLIST_FIELDS,
+  checklistProgress,
+  checklistValueText,
+  isChecklistComplete,
+  type CourseChecklist,
+} from "./checklist.ts";
 import { formatUpdated } from "./format.ts";
 import { slotLabel } from "./slots.ts";
 import type { PlacedPeriod, PlanCourse, TermMeta } from "./plan-types.ts";
@@ -107,9 +114,10 @@ function courseSheet(context: ExportContext, rows: ExportRow[]): Sheet {
  * one thing this file must never do is lose the sentence "ข้อมูลตัวอย่าง" on
  * its way into someone's email.
  */
-function aboutSheet(context: ExportContext, rowCount: number): Sheet {
+function aboutSheet(context: ExportContext, rowCount: number, view: string): Sheet {
   const rows: CellValue[][] = [
     ["เทอม / ปีการศึกษา", context.term.label],
+    ["มุมมองที่ส่งออก", view],
     ["สถานะเทอม", context.isArchived ? "ปิดแล้ว — บันทึกย้อนหลัง แก้ไขไม่ได้" : "กำลังจัดตาราง"],
     ["จำนวนวิชาในไฟล์", rowCount],
     ["ตัวกรองที่ใช้", context.filters.length ? context.filters.join(" · ") : "ไม่ได้กรอง — ทั้งเทอม"],
@@ -129,7 +137,54 @@ function aboutSheet(context: ExportContext, rowCount: number): Sheet {
 }
 
 export function buildCourseWorkbook(context: ExportContext, rows: ExportRow[]): Uint8Array<ArrayBuffer> {
-  return buildXlsx([courseSheet(context, rows), aboutSheet(context, rows.length)], {
+  return buildXlsx([courseSheet(context, rows), aboutSheet(context, rows.length, "ตารางรายวิชา")], {
+    modified: context.exportedAt,
+  });
+}
+
+/* ---- the paperwork checklist ----------------------------------------- */
+
+export type ChecklistExportRow = { course: PlanCourse; checklist: CourseChecklist };
+
+/**
+ * The checklist as a spreadsheet: one row per course, one column per step.
+ *
+ * The same shape as the screen, on purpose. This file is what gets mailed to
+ * someone who wants to know where the paperwork stands, and a reader who has
+ * seen the page should not have to work out that they are the same seven
+ * questions in a different order.
+ *
+ * `ทำครบหรือยัง` is last rather than first: it is a summary of the row, and a
+ * verdict printed before its evidence invites reading only the verdict.
+ */
+function checklistSheet(context: ExportContext, rows: ChecklistExportRow[]): Sheet {
+  const columns = [
+    { header: "รหัสวิชา", width: 12 },
+    { header: "ชื่อวิชา", width: 38 },
+    { header: "บริษัท", width: 18 },
+    ...CHECKLIST_FIELDS.map((field) => ({ header: field.label, width: field.kind === "code" ? 22 : 20, wrap: true })),
+    { header: "ทำครบหรือยัง", width: 16 },
+  ];
+
+  const body: CellValue[][] = rows.map(({ course, checklist }) => {
+    const progress = checklistProgress(checklist);
+    return [
+      course.courseCode,
+      course.title,
+      course.provider,
+      ...CHECKLIST_FIELDS.map((field) => checklistValueText(checklist, field)),
+      isChecklistComplete(checklist) ? "ครบแล้ว" : `ยังไม่ครบ (${progress.done}/${progress.total})`,
+    ];
+  });
+
+  return { name: `เช็กลิสต์ ${context.term.shortLabel.replace("/", "-")}`, columns, rows: body, filter: true };
+}
+
+export function buildChecklistWorkbook(
+  context: ExportContext,
+  rows: ChecklistExportRow[],
+): Uint8Array<ArrayBuffer> {
+  return buildXlsx([checklistSheet(context, rows), aboutSheet(context, rows.length, "เช็กลิสต์งานเอกสาร")], {
     modified: context.exportedAt,
   });
 }
@@ -138,8 +193,13 @@ export function buildCourseWorkbook(context: ExportContext, rows: ExportRow[]): 
  * ASCII only, and the term id in the middle: these files are mailed around and
  * end up side by side in someone's Downloads folder, where a Thai filename can
  * arrive mangled and two files called "รายวิชา.xlsx" are indistinguishable.
+ *
+ * The two views produce two different files, so the name says which — one
+ * folder holding `courses` and `checklist` for the same term is the normal
+ * case, not a mistake to be avoided.
  */
-export function courseFileName(context: ExportContext): string {
+export function courseFileName(context: ExportContext, view: "table" | "checklist" = "table"): string {
   const stamp = context.exportedAt.toISOString().slice(0, 10).replace(/-/g, "");
-  return `nextlink-courses-${context.term.id}-${stamp}.xlsx`;
+  const kind = view === "checklist" ? "checklist" : "courses";
+  return `nextlink-${kind}-${context.term.id}-${stamp}.xlsx`;
 }

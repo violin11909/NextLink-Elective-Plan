@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { readChecklist, type CourseChecklist } from "@/lib/checklist.ts";
 import { detectConflicts, type Conflict } from "@/lib/conflicts.ts";
 import {
   EMPTY_ROOM_EDITS,
@@ -32,6 +33,8 @@ type StoredPlan = {
   assignments: Assignment[];
   courseOverrides: Record<string, CourseOverride>;
   roomEdits?: RoomEdits;
+  /** Only the fields someone actually answered, per course. */
+  checklists?: Record<string, Partial<CourseChecklist>>;
   editedAt: string;
 };
 
@@ -50,6 +53,7 @@ export function usePlanState(payload: PlanPayload) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [overrides, setOverrides] = useState<Record<string, CourseOverride>>({});
   const [roomEdits, setRoomEdits] = useState<RoomEdits>(EMPTY_ROOM_EDITS);
+  const [checklists, setChecklists] = useState<Record<string, Partial<CourseChecklist>>>({});
   const [editedAt, setEditedAt] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -58,6 +62,7 @@ export function usePlanState(payload: PlanPayload) {
     assignments: Assignment[];
     overrides: Record<string, CourseOverride>;
     roomEdits: RoomEdits;
+    checklists: Record<string, Partial<CourseChecklist>>;
   } | null>(null);
 
   useEffect(() => {
@@ -74,6 +79,7 @@ export function usePlanState(payload: PlanPayload) {
               ? { overrides: stored.overrides ?? {}, added: stored.added, removed: stored.removed }
               : EMPTY_ROOM_EDITS,
           );
+          setChecklists(parsed.checklists ?? {});
           setEditedAt(parsed.editedAt ?? null);
         }
       }
@@ -87,12 +93,19 @@ export function usePlanState(payload: PlanPayload) {
   useEffect(() => {
     if (!ready || !editedAt) return;
     try {
-      const stored: StoredPlan = { version: 2, assignments, courseOverrides: overrides, roomEdits, editedAt };
+      const stored: StoredPlan = {
+        version: 2,
+        assignments,
+        courseOverrides: overrides,
+        roomEdits,
+        checklists,
+        editedAt,
+      };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
     } catch {
       // Storage full or unavailable — the in-memory plan still stands.
     }
-  }, [assignments, overrides, roomEdits, editedAt, ready]);
+  }, [assignments, overrides, roomEdits, checklists, editedAt, ready]);
 
   /** Courses as they are now: the bundled data with a person's edits laid over. */
   const courses = useMemo(
@@ -128,14 +141,16 @@ export function usePlanState(payload: PlanPayload) {
       assignments?: Assignment[];
       overrides?: Record<string, CourseOverride>;
       roomEdits?: RoomEdits;
+      checklists?: Record<string, Partial<CourseChecklist>>;
     }) => {
-      undoRef.current = { assignments, overrides, roomEdits };
+      undoRef.current = { assignments, overrides, roomEdits, checklists };
       if (next.assignments) setAssignments(sortAssignments(next.assignments));
       if (next.overrides) setOverrides(next.overrides);
       if (next.roomEdits) setRoomEdits(next.roomEdits);
+      if (next.checklists) setChecklists(next.checklists);
       setEditedAt(new Date().toISOString());
     },
-    [assignments, overrides, roomEdits],
+    [assignments, overrides, roomEdits, checklists],
   );
 
   const undo = useCallback(() => {
@@ -145,6 +160,7 @@ export function usePlanState(payload: PlanPayload) {
     setAssignments(previous.assignments);
     setOverrides(previous.overrides);
     setRoomEdits(previous.roomEdits);
+    setChecklists(previous.checklists);
     setEditedAt(new Date().toISOString());
     return true;
   }, []);
@@ -280,6 +296,27 @@ export function usePlanState(payload: PlanPayload) {
     [rooms, roomEdits, commit],
   );
 
+  /* ---- the paperwork checklist -------------------------------------- */
+
+  /**
+   * One course's checklist, filled in from what was stored.
+   *
+   * Read through `readChecklist` rather than handed out raw: a course nobody
+   * has touched has no entry at all, and every caller wants the blank form
+   * rather than `undefined`.
+   */
+  const checklistFor = useCallback(
+    (courseId: string): CourseChecklist => readChecklist(checklists[courseId]),
+    [checklists],
+  );
+
+  /** Record one answer. Only the fields someone touched are ever stored. */
+  const setChecklistField = useCallback(
+    (courseId: string, patch: Partial<CourseChecklist>) =>
+      commit({ checklists: { ...checklists, [courseId]: { ...(checklists[courseId] ?? {}), ...patch } } }),
+    [checklists, commit],
+  );
+
   /** How many classes sit in a room — what a delete is about to throw out. */
   const assignmentsInRoom = useCallback(
     (roomId: string) => assignments.filter((item) => item.roomId === roomId).length,
@@ -296,6 +333,7 @@ export function usePlanState(payload: PlanPayload) {
     setAssignments([]);
     setOverrides({});
     setRoomEdits(EMPTY_ROOM_EDITS);
+    setChecklists({});
     setEditedAt(null);
   }, []);
 
@@ -319,6 +357,8 @@ export function usePlanState(payload: PlanPayload) {
     updateRoom,
     removeRoom,
     setBlocked,
+    checklistFor,
+    setChecklistField,
     assignmentsInRoom,
     clearUnlocked,
     resetAll,
