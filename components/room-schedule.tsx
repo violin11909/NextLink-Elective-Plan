@@ -2,10 +2,13 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { AssignDialog } from "@/components/assign-dialog";
+import { BookingDialog, type BookingTarget } from "@/components/booking-dialog";
 import { CourseChip } from "@/components/course-chip";
 import { PlanShell } from "@/components/plan-shell";
 import { ResultAnnouncer } from "@/components/result-announcer";
+import { RoomDialog, type RoomFormTarget } from "@/components/room-dialog";
 import { StatusToast, useStatusToast } from "@/components/status-toast";
 import { WeekGrid } from "@/components/week-grid";
 import { formatNumber } from "@/lib/format";
@@ -24,10 +27,13 @@ import { usePlanState } from "@/lib/use-plan-state";
  */
 export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId: string }) {
   const plan = usePlanState(payload);
+  const router = useRouter();
   const { toast, show, dismiss, holdTimer, resumeTimer } = useStatusToast();
   const [assignSlot, setAssignSlot] = useState<SlotId | null>(null);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState("");
+  const [roomForm, setRoomForm] = useState<RoomFormTarget | null>(null);
+  const [booking, setBooking] = useState<BookingTarget | null>(null);
 
   const room = plan.rooms.find((item) => item.id === roomId) ?? null;
   const coursesById = useMemo(() => new Map(plan.courses.map((course) => [course.id, course])), [plan.courses]);
@@ -108,6 +114,9 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
           </p>
         </div>
         <div className="intro-badges">
+          <button className="secondary-button" type="button" onClick={() => setRoomForm({ room })}>
+            แก้ไขห้องนี้
+          </button>
           {room.seatsIsEstimated ? (
             <span className="scope-chip">
               <span className="scope-chip-label">ความจุ</span> ยังไม่ยืนยัน
@@ -146,6 +155,17 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
                 <div className="slot-cell is-blocked">
                   <span className="slot-blocked-label">กันไว้</span>
                   <small>{blocked.reason}</small>
+                  {/* The hold is released from the period it holds — the same
+                      place it was made, and the only place the reader is
+                      looking when they wonder whether it still applies. */}
+                  <button
+                    className="slot-add"
+                    type="button"
+                    onClick={() => setBooking({ room, slotId, reason: blocked.reason })}
+                  >
+                    แก้ไขการกัน
+                    <span className="sr-only"> {slotLabel(slotId)}</span>
+                  </button>
                 </div>
               );
             }
@@ -206,10 +226,25 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
                     ย้ายมาที่ {slotLabel(slotId)}
                   </button>
                 ) : (
-                  <button className="slot-add" type="button" onClick={() => setAssignSlot(slotId)}>
-                    <span aria-hidden="true">＋</span>
-                    <span className="sr-only">เพิ่มวิชาลง {slotLabel(slotId)} ใน {room.name}</span>
-                  </button>
+                  <span className="slot-actions">
+                    <button className="slot-add" type="button" onClick={() => setAssignSlot(slotId)}>
+                      <span aria-hidden="true">＋</span>
+                      <span className="sr-only">เพิ่มวิชาลง {slotLabel(slotId)} ใน {room.name}</span>
+                    </button>
+                    {/* Only offered while the period is empty: a period with a
+                        class in it is released by moving the class, not by
+                        holding the period on top of it. */}
+                    {here.length === 0 ? (
+                      <button
+                        className="slot-book"
+                        type="button"
+                        onClick={() => setBooking({ room, slotId, reason: null })}
+                      >
+                        กันคาบ
+                        <span className="sr-only"> {slotLabel(slotId)} ไว้ให้วิชาอื่น</span>
+                      </button>
+                    ) : null}
+                  </span>
                 )}
               </div>
             );
@@ -227,6 +262,49 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
           if (assignSlot) placeInSlot(courseId, assignSlot);
         }}
         onClose={() => setAssignSlot(null)}
+      />
+
+      <RoomDialog
+        target={roomForm}
+        rooms={plan.rooms}
+        assignedCount={plan.assignmentsInRoom(room.id)}
+        onSave={(draft) => {
+          plan.updateRoom(room.id, draft);
+          show(`บันทึก ${draft.name} แล้ว`, plan.undo);
+          setRoomForm(null);
+        }}
+        onDelete={() => {
+          const losing = plan.assignmentsInRoom(room.id);
+          plan.removeRoom(room.id);
+          setRoomForm(null);
+          // The page this is on has just stopped existing, so it leaves before
+          // rendering "ไม่พบห้องนี้" at the person who removed it on purpose.
+          router.push("/rooms");
+          show(
+            losing > 0
+              ? `ลบ ${room.name} แล้ว · ${formatNumber(losing)} คาบกลับไปเป็นวิชาที่ยังไม่ได้จัด`
+              : `ลบ ${room.name} แล้ว`,
+            plan.undo,
+          );
+        }}
+        onClose={() => setRoomForm(null)}
+      />
+
+      <BookingDialog
+        target={booking}
+        rooms={plan.rooms}
+        onSave={(reason) => {
+          if (!booking) return;
+          plan.setBlocked(room.id, booking.slotId, reason);
+          show(
+            reason
+              ? `กัน${slotLabel(booking.slotId)}ไว้ให้ ${reason}`
+              : `ปลดการกัน${slotLabel(booking.slotId)}แล้ว`,
+            plan.undo,
+          );
+          setBooking(null);
+        }}
+        onClose={() => setBooking(null)}
       />
 
       <StatusToast toast={toast} onDismiss={dismiss} onHold={holdTimer} onResume={resumeTimer} />

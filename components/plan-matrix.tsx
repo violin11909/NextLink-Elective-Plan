@@ -38,6 +38,8 @@ export function PlanMatrix({
   onRemove,
   onBlockedDrop,
   onHeldChange,
+  onEditRoom,
+  onBookSlot,
 }: {
   rooms: PlanRoom[];
   courses: PlanCourse[];
@@ -54,6 +56,10 @@ export function PlanMatrix({
    *  inside the board it appeared and disappeared above the table, moving
    *  every row down and then back the moment a drag started. */
   onHeldChange?: (course: PlanCourse | null) => void;
+  /** Opens the room form for one column — where a room is also renamed or removed. */
+  onEditRoom: (room: PlanRoom) => void;
+  /** Opens the booking form for one cell. `reason` is what it holds today, if any. */
+  onBookSlot: (room: PlanRoom, slotId: SlotId, reason: string | null) => void;
 }) {
   const [held, setHeld] = useState<Held | null>(null);
   const [hover, setHover] = useState<string | null>(null);
@@ -234,19 +240,43 @@ export function PlanMatrix({
           <thead>
             <tr>
               <th className="matrix-corner" scope="col">คาบ</th>
-              {columns.map((column) => (
+              {columns.map((column) => {
+                const room = column.room;
+                return (
                 <th className="matrix-room" key={column.key} scope="col">
                   <span>{column.label}</span>
                   {column.detail ? <small>{column.detail}</small> : null}
+                  {/* The column header is where a room already names itself, so
+                      it is where changing or removing that room belongs — the
+                      alternative is reading the board here and editing it on
+                      another page, matching rooms by name in your head. */}
+                  {room ? (
+                    <button
+                      className="matrix-room-edit"
+                      type="button"
+                      title={`แก้ไข ${room.name}`}
+                      onClick={() => onEditRoom(room)}
+                    >
+                      <span aria-hidden="true">✎</span>
+                      <span className="sr-only">แก้ไขห้อง {room.name}</span>
+                    </button>
+                  ) : null}
                 </th>
-              ))}
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {DAYS.map((day) => (
               <Fragment key={day}>
                 <tr className="matrix-day">
-                  <th colSpan={columns.length + 1} scope="colgroup">{DAY_LABELS[day]}</th>
+                  {/* The label is stuck to the left edge separately from its
+                      cell: the cell spans the whole board, so pinning the cell
+                      keeps a box on screen whose text is still two thousand
+                      pixels to the left. */}
+                  <th colSpan={columns.length + 1} scope="colgroup">
+                    <span className="matrix-day-label">{DAY_LABELS[day]}</span>
+                  </th>
                 </tr>
                 {PERIOD_KEYS.map((period) => {
                   const slotId = makeSlotId(day, period);
@@ -258,7 +288,8 @@ export function PlanMatrix({
                       </th>
                       {columns.map((column) => {
                         const cellKey = `${slotId}:${column.key}`;
-                        const blocked = column.room?.blockedSlots.find((entry) => entry.slotId === slotId);
+                        const room = column.room;
+                        const blocked = room?.blockedSlots.find((entry) => entry.slotId === slotId);
                         const here = assignments.filter(
                           (item) => item.slotId === slotId && (item.roomId ?? ONLINE_COLUMN) === column.key,
                         );
@@ -303,8 +334,21 @@ export function PlanMatrix({
                               }
                             }}
                           >
-                            {blocked ? (
-                              <span className="matrix-blocked" title={blocked.reason}>จองไว้ให้วิชาบังคับ</span>
+                            {/* The booking is a button, not a label: whoever is
+                                looking at the period it holds is the person who
+                                knows whether it still holds, and making them go
+                                elsewhere to release it is how a board fills up
+                                with holds nobody dares touch. */}
+                            {blocked && room ? (
+                              <button
+                                className="matrix-blocked"
+                                type="button"
+                                title={`แก้ไขหรือปลดการกัน ${room.name} ${slotLabel(slotId)}`}
+                                onClick={(event) => { event.stopPropagation(); onBookSlot(room, slotId, blocked.reason); }}
+                              >
+                                <span className="matrix-blocked-tag">กันไว้</span>
+                                <small>{blocked.reason}</small>
+                              </button>
                             ) : null}
                             {here.map((assignment) => {
                               const course = coursesById.get(assignment.courseId);
@@ -431,6 +475,20 @@ export function PlanMatrix({
                                 <p className="slot-conflict-note">{problems.join(" · ")}</p>
                               ) : null;
                             })()}
+                            {/* Only on an empty period, and only while nothing
+                                is being placed — otherwise this button sits
+                                inside the drop target and eats the click that
+                                was meant for the cell. */}
+                            {room && !blocked && here.length === 0 && !heldCourse ? (
+                              <button
+                                className="matrix-book"
+                                type="button"
+                                onClick={(event) => { event.stopPropagation(); onBookSlot(room, slotId, null); }}
+                              >
+                                <span aria-hidden="true">กันคาบ</span>
+                                <span className="sr-only">กัน {room.name} {slotLabel(slotId)} ไว้ให้วิชาอื่น</span>
+                              </button>
+                            ) : null}
                           </td>
                         );
                       })}

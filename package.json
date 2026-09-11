@@ -7,10 +7,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "node .next/standalone/server.js",
-    "check": "tsc --noEmit && npm run check:css && npm run check:pages && npm run check:scheduler && npm run check:xlsx",
+    "check": "tsc --noEmit && npm run check:css && npm run check:pages && npm run check:scheduler && npm run check:rooms && npm run check:xlsx",
     "check:css": "node scripts/check-css.mjs",
     "check:pages": "node scripts/check-consistency.mjs",
     "check:scheduler": "node --experimental-strip-types scripts/check-scheduler.mjs",
+    "check:rooms": "node --experimental-strip-types scripts/check-rooms.mjs",
     "check:xlsx": "node --experimental-strip-types scripts/check-xlsx.mjs"
   },
   "dependencies": {
