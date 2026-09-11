@@ -3,8 +3,10 @@
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { BookingDialog, type BookingTarget } from "@/components/booking-dialog";
 import { ConflictPanel } from "@/components/conflict-panel";
 import { PlanMatrix } from "@/components/plan-matrix";
+import { RoomDialog, type RoomFormTarget } from "@/components/room-dialog";
 import { PlanShell } from "@/components/plan-shell";
 import { Pager } from "@/components/pager";
 import { StatusToast, useStatusToast } from "@/components/status-toast";
@@ -24,6 +26,9 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
   const [followUpOpen, setFollowUpOpen] = useState(true);
   const [followUpPage, setFollowUpPage] = useState(1);
   const [holding, setHolding] = useState<PlanCourse | null>(null);
+  /** The room form and the booking form, both opened from the board below. */
+  const [roomForm, setRoomForm] = useState<RoomFormTarget | null>(null);
+  const [booking, setBooking] = useState<BookingTarget | null>(null);
   const boardRef = useRef<HTMLElement>(null);
   /** Where the board sat when a replan started, so it can be put back. */
   const anchorRef = useRef<number | null>(null);
@@ -233,6 +238,9 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           </div>
           <div className="table-heading-actions">
             <Link className="text-button" href="/courses/list">ดูรายวิชาทั้งหมด</Link>
+            <button className="secondary-button" type="button" onClick={() => setRoomForm({ room: null })}>
+              ＋ เพิ่มห้อง
+            </button>
             <button
               className="secondary-button"
               type="button"
@@ -270,8 +278,57 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
             )
           }
           onHeldChange={onHeldChange}
+          onEditRoom={(room) => setRoomForm({ room })}
+          onBookSlot={(room, slotId, reason) => setBooking({ room, slotId, reason })}
         />
       </section>
+
+      <RoomDialog
+        target={roomForm}
+        rooms={plan.rooms}
+        assignedCount={roomForm?.room ? plan.assignmentsInRoom(roomForm.room.id) : 0}
+        onSave={(draft) => {
+          if (roomForm?.room) {
+            plan.updateRoom(roomForm.room.id, draft);
+            show(`บันทึก ${draft.name} แล้ว`, plan.undo);
+          } else {
+            plan.addRoom(draft);
+            show(`เพิ่ม ${draft.name} เข้าตารางแล้ว`, plan.undo);
+          }
+          setRoomForm(null);
+        }}
+        onDelete={() => {
+          const room = roomForm?.room;
+          if (!room) return;
+          const losing = plan.assignmentsInRoom(room.id);
+          plan.removeRoom(room.id);
+          show(
+            losing > 0
+              ? `ลบ ${room.name} แล้ว · ${formatNumber(losing)} คาบกลับไปเป็นวิชาที่ยังไม่ได้จัด`
+              : `ลบ ${room.name} แล้ว`,
+            plan.undo,
+          );
+          setRoomForm(null);
+        }}
+        onClose={() => setRoomForm(null)}
+      />
+
+      <BookingDialog
+        target={booking}
+        rooms={plan.rooms}
+        onSave={(reason) => {
+          if (!booking) return;
+          plan.setBlocked(booking.room.id, booking.slotId, reason);
+          show(
+            reason
+              ? `กัน ${booking.room.name} ${slotLabel(booking.slotId)} ไว้ให้ ${reason}`
+              : `ปลดการกัน ${booking.room.name} ${slotLabel(booking.slotId)} แล้ว`,
+            plan.undo,
+          );
+          setBooking(null);
+        }}
+        onClose={() => setBooking(null)}
+      />
 
       <StatusToast toast={toast} onDismiss={dismiss} onHold={holdTimer} onResume={resumeTimer} />
     </PlanShell>

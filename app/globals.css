@@ -130,7 +130,11 @@ h1 { margin: 4px 0 0; font-size: 21px; letter-spacing: -.02em; }
 .queue-filter-button strong { color: #3d4b65; font-size: 12px; }
 .queue-filter-button:hover, .queue-filter-button.is-active { border-color: #adc2eb; color: #2f5cb8; background: #f4f7ff; }
 .queue-filter-button.is-active strong { color: #2f5cb8; }
-.follow-up-icon { display: grid; flex: 0 0 auto; place-items: center; aspect-ratio: 1 / 1; height: 100%; border-radius: 8px; color: #b93445; background: #fff0f1; font-weight: 850; }
+/* A fixed square, sized to itself. It used to be `height: 100%` with an
+   aspect-ratio, which made the icon as wide as the row was tall — so a row
+   whose title wrapped grew a 50px icon inside a 25px column and pushed it
+   over the text beside it. */
+.follow-up-icon { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; color: #b93445; background: #fff0f1; font-size: 14px; font-weight: 850; }
 .follow-up-icon.queue-waiting { color: #8f5410; background: #fff3e5; }.follow-up-icon.queue-progress { color: #3568c4; background: #edf3ff; }
 .pager { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 0 7px; border-top: 1px solid #edf0f4; }
 .pager-range { color: var(--muted); font-size: 13px; }
@@ -226,13 +230,11 @@ the thing overflowing. The last fields and the save button were unreachable. */
 @keyframes toast-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
 @media (max-width: 1050px) { .kpi-grid { grid-template-columns: repeat(3, 1fr); } .filters { grid-template-columns: minmax(220px, 1.5fr) repeat(2, minmax(145px, 1fr)); } }
-/* Below this the columns would be narrower than a Thai course title, so the
-   board goes back to scrolling sideways inside its own box rather than
-   squeezing ten columns into a laptop screen. */
+/* Tighter columns where the screen is the constraint. The board already
+   scrolls at every width — see .matrix-scroll — so this only decides how much
+   of the week fits before it has to. */
 @media (max-width: 1100px) {
-  .matrix-scroll { overflow-x: auto; }
-      .matrix { width: max-content; min-width: 100%; table-layout: auto; }
-      .matrix-room, .matrix-cell { min-width: 150px; }
+  .matrix-room, .matrix-cell { min-width: 116px; }
       .matrix-corner, .matrix-slot { width: 88px; min-width: 88px; }
 }
 
@@ -351,8 +353,8 @@ action on this page and belongs one press from the thing it applies to. */
 act on it — a list of problems with no handles is the failure mode this
 panel exists to avoid. */
 .conflict-list { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; }
-.conflict-row { display: grid; grid-template-columns: 25px minmax(0, 1fr) auto; align-items: start; gap: 30px; padding: 12px; border: 1px solid #edf0f5; border-radius: 12px; background: #fcfcfe; }
-.conflict-row:has(> .conflict-copy:last-child) { grid-template-columns: 25px minmax(0, 1fr); }
+.conflict-row { display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: start; gap: 10px 16px; padding: 12px; border: 1px solid #edf0f5; border-radius: 12px; background: #fcfcfe; }
+.conflict-row:has(> .conflict-copy:last-child) { grid-template-columns: 26px minmax(0, 1fr); }
 .conflict-copy { display: grid; min-width: 0; gap: 5px; }
 .conflict-title { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
 .conflict-copy strong { color: #283349; font-size: 14px; line-height: 1.4; }
@@ -365,7 +367,7 @@ panel exists to avoid. */
 .conflict-provider { color: #4a5766; font-weight: 800; }
 .conflict-slot-list { display: grid; gap: 4px; margin: 2px 0 0; padding: 0; list-style: none; color: var(--muted-2); font-size: 12px; line-height: 1.5; }
 .conflict-slot-name { margin-right: 7px; color: #4a5766; font-weight: 800; }
-.conflict-side { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; gap: 7px; }
+.conflict-side { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: flex-end; gap: 7px; padding-left: 8px; }
 
 .room-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 13px; }
 .room-card { display: grid; align-content: start; gap: 7px; padding: 15px; border: 1px solid var(--line); border-radius: 13px; background: #fff; text-decoration: none; color: inherit; transition: transform .15s, border-color .15s; }
@@ -432,7 +434,7 @@ out — but it should never happen without the reader seeing it. */
           .week-day-card h4 { margin: 0; color: #26324a; font-size: 15px; }
           .week-day-period { display: grid; grid-template-columns: 88px minmax(0, 1fr); align-items: start; gap: 10px; }
           .week-day-slot { min-width: 0; }
-          .conflict-row { grid-template-columns: 25px minmax(0, 1fr); }
+          .conflict-row { grid-template-columns: 26px minmax(0, 1fr); }
           .room-grid { grid-template-columns: 1fr; }
           .assign-option { grid-template-columns: 1fr; }
           .assign-option-warnings { justify-content: flex-start; max-width: none; }
@@ -448,7 +450,7 @@ out — but it should never happen without the reader seeing it. */
 /* The board is the widest thing in the product and the page column is sized for
    reading prose. Ten room columns inside 880px means scrolling sideways to see
    the week, so this one panel breaks out of the column and takes the viewport. */
-.matrix-panel { margin-inline: calc((100% - min(96vw, 1560px)) / 2); }
+.matrix-panel { margin-inline: calc((100% - min(98vw, 2100px)) / 2); }
 /* `min-width: 0` on both, or the board does not scroll — it pushes.
    A grid item defaults to min-width:auto, so the max-content table inside made
    .matrix-scroll grow past the panel instead of scrolling inside it, and the
@@ -488,22 +490,35 @@ out — but it should never happen without the reader seeing it. */
    containing block was the page itself, so overflow:auto never clipped them —
    the labels of cells 2000px to the right stretched the document and the whole
    page scrolled sideways on every screen size. */
-.matrix-scroll { position: relative; min-width: 0; border: 1px solid var(--line); border-radius: 13px; }
-/* Fixed layout, full width: the board fits the page and every column takes an
-   equal share, wrapping its text instead of demanding more room. It used to be
-   max-content inside a scrolling box, which meant two scrollbars — one for the
-   week, one for the page — and neither showed the whole week. */
-.matrix { width: 100%; table-layout: fixed; border-collapse: separate; border-spacing: 0; }
+/* The board scrolls inside its own box, sideways and down.
+   Room count stopped being a layout constant the day rooms became editable: a
+   full-width fixed table divides whatever room it has by however many rooms
+   exist, so adding a floor of ตึกร้อยปี would squeeze every column until a
+   course title is four characters wide. Columns keep a readable width instead
+   and the box scrolls.
+   The height cap is not decoration. An element that scrolls on one axis
+   scrolls on both, and the sticky header inside then sticks to this box rather
+   than to the page — so without a height it would never stick to anything.
+   With one, the room names and the period column stay put while the week moves
+   under them, which is the only way a 16-column board stays readable. */
+.matrix-scroll { position: relative; min-width: 0; max-height: min(78vh, 900px); overflow: auto; border: 1px solid var(--line); border-radius: 13px; }
+.matrix { width: max-content; min-width: 100%; table-layout: auto; border-collapse: separate; border-spacing: 0; }
+/* Back to roughly the width the old fixed-layout board gave each column.
+   Wider columns read better one at a time and worse as a week: every extra
+   pixel per column is another column pushed off the screen, and the board is
+   for comparing rooms against each other. */
+.matrix-room, .matrix-cell { min-width: 124px; max-width: 152px; }
 /* The shared table header style is built for a wide reference table: nowrap,
    uppercase, wide tracking. On a fixed-layout board that meant the room names
    were cut off mid-word instead of wrapping onto a second line. */
 .matrix th { letter-spacing: 0; text-transform: none; white-space: normal; }
 .matrix th, .matrix td { border-bottom: 1px solid #edf0f5; border-right: 1px solid #edf0f5; }
 .matrix-corner { position: sticky; top: 0; left: 0; z-index: 4; width: 108px; padding: 8px 10px; color: var(--muted); background: #f4f6fa; font-size: 11px; text-align: left; }
-.matrix-room { position: sticky; top: 0; z-index: 3; padding: 8px 9px; color: #3d4b65; background: #f4f6fa; font-size: 11px; font-weight: 800; line-height: 1.4; text-align: left; vertical-align: top; }
+.matrix-room { position: sticky; top: 0; z-index: 3; padding: 8px 26px 8px 9px; color: #3d4b65; background: #f4f6fa; font-size: 11px; font-weight: 800; line-height: 1.4; text-align: left; vertical-align: top; }
 .matrix-room span { display: block; }
 .matrix-room small { display: block; color: var(--muted); font-size: 11px; font-weight: 700; }
 .matrix-day th { position: sticky; left: 0; z-index: 2; padding: 6px 11px; color: #2b3750; background: #eef1f7; font-size: 12px; font-weight: 800; letter-spacing: .04em; text-align: left; }
+.matrix-day-label { position: sticky; left: 11px; display: inline-block; }
 .matrix-slot { position: sticky; left: 0; z-index: 2; display: table-cell; width: 108px; padding: 8px 10px; background: #fbfcfe; text-align: left; vertical-align: top; }
 .matrix-slot strong { display: block; color: #3d4b65; font-size: 13px; }
 /* Wide enough, and small enough, for "09:00–12:00" to hold one line — it has no
@@ -525,7 +540,10 @@ out — but it should never happen without the reader seeing it. */
 .matrix-cell.is-drop-blocked { cursor: copy; }
 .matrix-cell.is-drop-blocked:hover, .matrix-cell.is-drop-blocked.is-drop-hovered { outline: 2px solid #c2394a; outline-offset: -2px; background: #fff5f6; }
 .matrix-cell.is-drop-ok:focus-visible, .matrix-cell.is-drop-blocked:focus-visible { outline: 3px solid var(--focus-ring); outline-offset: -3px; }
-.matrix-blocked { display: block; padding: 4px 2px; color: #6d778c; font-size: 12px; }
+.matrix-blocked { display: grid; gap: 2px; width: 100%; padding: 5px 6px; border: 1px solid #e3e7ee; border-radius: 8px; color: #6d778c; background: rgba(255,255,255,.75); font-size: 12px; text-align: left; }
+.matrix-blocked:hover { border-color: #b9c8e4; color: #3f6bcd; }
+.matrix-blocked-tag { font-size: 11px; font-weight: 850; letter-spacing: .04em; }
+.matrix-blocked small { color: var(--muted-2); font-size: 11px; line-height: 1.35; }
 /* The card is the drag surface, so nothing inside it may start a text
    selection instead — a press that begins a selection never becomes a
    drag, which is what made the middle of the card feel dead. */
@@ -579,7 +597,9 @@ out — but it should never happen without the reader seeing it. */
       .picker-bar { padding: 11px 16px 13px; }
       .picker-fab { right: 14px; bottom: 14px; }
       .tray-chip { max-width: none; }
-      .conflict-side { justify-content: flex-start; }
+      /* Two columns on a phone, so the actions take their own full-width row
+         rather than being wrung out in the 26px icon column. */
+      .conflict-side { grid-column: 1 / -1; justify-content: flex-start; padding-left: 0; }
 }
 
 /* Past terms — the read-only mode of the course list.
@@ -590,7 +610,6 @@ out — but it should never happen without the reader seeing it. */
 .term-switcher-label { color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
 .term-switcher select { min-width: 244px; min-height: var(--tap-min); padding: 0 12px; border: 1px solid #dce2ec; border-radius: 10px; color: var(--ink); background: #fbfcfe; font-size: 14px; font-weight: 750; }
 .term-switcher select:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); }
-.archive-note { display: flex; flex-wrap: wrap; align-items: center; gap: 9px; margin: 0 0 18px; padding: 11px 13px; border: 1px solid #e3e8f1; border-radius: 11px; color: var(--muted); background: #f7f9fc; font-size: 13px; line-height: 1.6; }
 .filters.filters-archive { grid-template-columns: minmax(280px, 2.4fr) minmax(118px, .62fr) minmax(118px, .62fr); }
 /* A row that leads nowhere still has to look like it leads nowhere on hover. */
 .course-link.is-static { cursor: default; }
@@ -608,3 +627,95 @@ out — but it should never happen without the reader seeing it. */
 .list-toolbar { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 15px; }
 .list-toolbar .filter-summary { flex: 1 1 260px; margin-top: 0; }
 .secondary-button:disabled { cursor: not-allowed; border-color: #eef1f6; color: #98a0ae; background: #f7f8fa; }
+
+/* Editing the room list — from the board, the room cards and one room's page */
+.matrix-room-edit { position: absolute; top: 5px; right: 4px; width: 21px; height: 21px; padding: 0; border: 0; border-radius: 6px; color: #7b8698; background: transparent; font-size: 12px; line-height: 1; }
+.matrix-room-edit:hover { color: var(--blue); background: #e8f0ff; }
+/* Hidden until the cell is pointed at: 16 rooms x 18 periods is 288 cells, and
+   a button drawn in every one of them would be the loudest thing on the board. */
+.matrix-book { width: 100%; min-height: 26px; padding: 4px; border: 1px dashed #dfe5ee; border-radius: 8px; color: #7d879a; background: transparent; font-size: 11px; font-weight: 750; opacity: 0; transition: opacity .12s ease; }
+.matrix-cell:hover .matrix-book, .matrix-book:focus-visible { opacity: 1; }
+.matrix-book:hover { border-color: #b9c8e4; color: #3f6bcd; background: #f4f8ff; }
+/* A pointer can reveal a control by hovering over it; a finger cannot. */
+@media (hover: none) {
+  .matrix-book { opacity: 1; }
+}
+.slot-actions { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.slot-book { min-height: 34px; padding: 6px 9px; border: 1px dashed #dfe5ee; border-radius: 9px; color: #7d879a; background: transparent; font-size: 12px; font-weight: 750; }
+.slot-book:hover { border-color: #b9c8e4; color: #3f6bcd; background: #f4f8ff; }
+.slot-cell.is-blocked .slot-add { min-height: 30px; font-size: 12px; }
+.room-card-shell { position: relative; display: grid; }
+.room-card-shell > .room-card { padding-bottom: 44px; }
+.room-card-edit { position: absolute; right: 12px; bottom: 11px; min-height: 30px; padding: 5px 11px; border: 1px solid #dce4f0; border-radius: 8px; color: #315faf; background: #f7faff; font-size: 12px; font-weight: 800; }
+.room-card-edit:hover { border-color: #9bb7ed; background: #edf3ff; }
+
+/* The room form and the booking form */
+.room-dialog { width: min(560px, calc(100vw - 28px)); }
+.booking-dialog { width: min(480px, calc(100vw - 28px)); }
+.room-form { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+.room-form-wide { grid-column: 1 / -1; }
+.room-form label { display: grid; gap: 6px; color: var(--muted); font-size: 13px; font-weight: 700; }
+.room-form input[type="text"], .room-form input[type="number"] { width: 100%; min-height: var(--tap-min); padding: 0 12px; border: 1px solid #dce2ec; border-radius: 10px; outline: 0; color: var(--ink); background: #fbfcfe; font-size: 14px; }
+.room-form input[type="text"]:focus, .room-form input[type="number"]:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); }
+/* More specific than `.room-form label` above, which would otherwise make
+   this a grid and stack the tick above its own sentence. */
+.room-form .room-form-check { display: flex; align-items: flex-start; gap: 10px; grid-column: 1 / -1; color: #38445b; font-size: 14px; font-weight: 700; }
+.room-form-check input { width: 18px; height: 18px; margin-top: 3px; }
+.room-form-check small { display: block; margin-top: 3px; color: var(--muted); font-size: 12px; font-weight: 650; line-height: 1.45; }
+.tier-choice { display: grid; gap: 10px; margin: 0; padding: 13px 14px; border: 1px solid var(--line); border-radius: 12px; }
+.tier-choice legend { padding: 0 6px; color: var(--muted); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.tier-choice label { display: flex; align-items: flex-start; gap: 10px; color: #38445b; font-size: 14px; font-weight: 700; }
+.tier-choice input { width: 18px; height: 18px; margin-top: 3px; }
+.tier-choice small { display: block; margin-top: 2px; color: var(--muted); font-size: 12px; font-weight: 650; line-height: 1.45; }
+.room-form-error { grid-column: 1 / -1; margin: 0; padding: 10px 12px; border-radius: 9px; color: #a3313c; background: #ffe9ed; font-size: 13px; line-height: 1.5; }
+.dialog-actions { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 4px; padding-top: 16px; border-top: 1px solid var(--line); }
+.dialog-actions-end { display: flex; align-items: center; gap: 10px; margin-left: auto; }
+.danger-text { color: #b93445; }
+.danger-text:hover { color: #94202f; }
+.danger-button { min-height: 34px; padding: 8px 12px; border: 1px solid #c2394a; border-radius: 8px; color: #fff; background: #c2394a; font-size: 13px; font-weight: 800; }
+.danger-button:hover { background: #a82f3f; }
+.delete-confirm { display: flex; align-items: center; flex-wrap: wrap; gap: 9px; color: #8c3340; font-size: 13px; line-height: 1.5; }
+
+@media (max-width: 760px) {
+  .room-form { grid-template-columns: 1fr; }
+      .dialog-actions { align-items: stretch; flex-direction: column; }
+      .dialog-actions-end { margin-left: 0; }
+}
+
+/* Two views of one list: the schedule facts, and the paperwork behind them */
+.view-switch { display: inline-flex; gap: 4px; margin: -2px 0 16px; padding: 4px; border: 1px solid var(--line); border-radius: 11px; background: #f4f6fa; }
+.view-switch-button { min-height: 34px; padding: 6px 14px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; font-size: 13px; font-weight: 800; }
+.view-switch-button:hover { color: #2f5cb8; }
+.view-switch-button.is-active { color: #203252; background: #fff; box-shadow: 0 1px 3px rgba(30, 49, 80, .12); }
+/* Fixed layout, widths declared in the markup's <colgroup>. Every status
+   column is then the same width whatever sits in it — with automatic layout
+   the two columns holding "กำลังดำเนินการ" came out wider than their
+   neighbours, and a row of identical controls read as a ragged one. The
+   min-width is the point below which the columns would be too narrow for
+   their own labels; under that the table scrolls inside its box. */
+.checklist-table { min-width: 1060px; table-layout: fixed; }
+/* The reference table bleeds into the panel's padding on purpose — it is a
+   wide table of text and the extra 44px is worth having. This one is a form,
+   and a control hard against the panel's edge reads as clipped, so the
+   checklist keeps the panel's own margins. Padding on the end cells would do
+   the same thing, except it would come out of those two columns and leave
+   their controls narrower than the five in the middle. */
+.table-wrap:has(.checklist-table) { margin-inline: 0; }
+/* The reference table's header style shouts in capitals, which is fine for
+   Thai and wrong for "instructor" and "Join MCV" — those are names of
+   things in MCV, and MCV does not write them that way. */
+/* `pre-line` so a header can say where it wants to break — see the "+" in
+   CHECKLIST_FIELDS. Left to itself, Chrome breaks Thai wherever it fits. */
+.checklist-table th { text-transform: none; white-space: pre-line; }
+.checklist-table th, .checklist-table td { padding-right: 7px; padding-left: 7px; }
+.checklist-table td { padding-top: 9px; padding-bottom: 9px; vertical-align: middle; }
+.checklist-table tr.is-complete td { background: #f7fdfa; }
+/* One size for all seven, and the small one: the controls sit inside their
+   column rather than filling it, so the row reads as seven of the same thing
+   rather than seven boxes of assorted widths. */
+.checklist-select { width: 100%; max-width: 118px; min-height: 34px; padding: 0 6px; border: 1px solid #dce2ec; border-radius: 8px; font-size: 12px; font-weight: 800; }
+.checklist-select:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); outline: 0; }
+/* A join code is copied character by character into another site, so it is
+   shown in a face where 0 and O are not the same shape. */
+.checklist-code { width: 100%; max-width: 92px; min-height: 34px; padding: 0 7px; border: 1px solid #dce2ec; border-radius: 8px; color: var(--ink); background: #fbfcfe; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.checklist-code:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); outline: 0; }

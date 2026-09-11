@@ -9,7 +9,8 @@
  * sources directly — no build step, no test framework.
  */
 import { buildXlsx, crc32, columnName } from "../lib/xlsx.ts";
-import { buildCourseWorkbook, courseFileName } from "../lib/course-export.ts";
+import { buildChecklistWorkbook, buildCourseWorkbook, courseFileName } from "../lib/course-export.ts";
+import { CHECKLIST_FIELDS, readChecklist } from "../lib/checklist.ts";
 
 let failures = 0;
 const check = (name, fn) => {
@@ -261,8 +262,44 @@ check("the file name is ASCII, dated, and names its term", () => {
   return name === "nextlink-courses-2568-2-20260907.xlsx" ? null : `got ${name}`;
 });
 
+/* ---- the checklist export -------------------------------------------- */
+
+check("the checklist sheet asks every step, and says whether the row is done", () => {
+  const rows = [
+    { course: course(), checklist: readChecklist({ invitationLetter: "RECEIVED", mcvJoinCode: "CP-4821" }) },
+    {
+      course: course({ id: "c2", courseCode: "21105802", title: "AI Service" }),
+      checklist: readChecklist({
+        invitationLetter: "RECEIVED",
+        teachingHoursLetter: "RECEIVED",
+        mcvInstructorRequest: "DONE",
+        mentorAdded: "DONE",
+        guestLecturerAdded: "DONE",
+        mcvJoinCode: "CP-1234",
+        studentsAdded: "DONE",
+      }),
+    },
+  ];
+  const parts = readZip(buildChecklistWorkbook(context(), rows));
+  const sheet = parts.get("xl/worksheets/sheet1.xml");
+  const missing = CHECKLIST_FIELDS.filter((item) => !sheet.includes(item.label));
+  if (missing.length) return `no column for ${missing.map((item) => item.label).join(", ")}`;
+  if (!sheet.includes("ยังไม่ครบ (2/7)")) return "an unfinished row does not say how far along it is";
+  if (!sheet.includes("ครบแล้ว")) return "a finished row does not say so";
+  if (!sheet.includes("CP-4821")) return "the join code is missing";
+  const about = parts.get("xl/worksheets/sheet2.xml");
+  return about.includes("เช็กลิสต์งานเอกสาร") ? null : "the second sheet does not say which view this was";
+});
+
+check("the two views produce two differently named files", () => {
+  const table = courseFileName(context(), "table");
+  const checklist = courseFileName(context(), "checklist");
+  if (table === checklist) return "both views would overwrite one file";
+  return checklist === "nextlink-checklist-2568-2-20260907.xlsx" ? null : `got ${checklist}`;
+});
+
 if (failures) {
   console.error(`\nxlsx: ${failures} failing check(s)`);
   process.exit(1);
 }
-console.log("xlsx: ok (14 checks)");
+console.log("xlsx: ok (16 checks)");

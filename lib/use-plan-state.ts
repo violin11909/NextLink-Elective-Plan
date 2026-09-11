@@ -1,19 +1,40 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { readChecklist, type CourseChecklist } from "@/lib/checklist.ts";
 import { detectConflicts, type Conflict } from "@/lib/conflicts.ts";
+import {
+  EMPTY_ROOM_EDITS,
+  addRoom as addRoomTo,
+  deleteRoom,
+  mergeRooms,
+  patchRoom,
+  setRoomBlocked,
+  type RoomDraft,
+  type RoomEdits,
+  type RoomOverride,
+} from "@/lib/rooms.ts";
 import { defaultTimesFor, explainFailure, planSchedule, sortAssignments } from "@/lib/scheduler.ts";
 import type { Assignment, FailureReason, PlanCourse, PlanPayload } from "@/lib/plan-types.ts";
 import type { SlotId } from "@/lib/slots.ts";
 
+/** The key is unchanged from the first release; `version` inside it is what moves. */
 const STORAGE_KEY = "nextlink.plan.v1";
 
 type CourseOverride = Partial<Pick<PlanCourse, "availability" | "sessionsPerWeek" | "minSeats" | "capacity" | "notes">>;
 
+/**
+ * Version 2 added the room edits. A version 1 store is read as it always was
+ * and simply has no rooms in it — a saved plan is hours of someone's work, and
+ * throwing it away because the schema grew is not a migration.
+ */
 type StoredPlan = {
-  version: 1;
+  version: 1 | 2;
   assignments: Assignment[];
   courseOverrides: Record<string, CourseOverride>;
+  roomEdits?: RoomEdits;
+  /** Only the fields someone actually answered, per course. */
+  checklists?: Record<string, Partial<CourseChecklist>>;
   editedAt: string;
 };
 
@@ -22,28 +43,43 @@ export type PlanGap = { course: PlanCourse; missing: number; reason: FailureReas
 /**
  * Everything the planner pages read and write.
  *
- * Only two things are stored: the assignments, and the fields a person edited
- * on a course. Conflicts and gaps are recomputed from those on every render —
- * derived state that is also persisted is just two copies waiting to disagree,
- * and this one would disagree in the direction of showing a stale "all clear".
+ * Three things are stored: the assignments, the fields a person edited on a
+ * course, and the rooms they added, changed or removed. Conflicts and gaps are
+ * recomputed from those on every render — derived state that is also persisted
+ * is just two copies waiting to disagree, and this one would disagree in the
+ * direction of showing a stale "all clear".
  */
 export function usePlanState(payload: PlanPayload) {
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [overrides, setOverrides] = useState<Record<string, CourseOverride>>({});
+  const [roomEdits, setRoomEdits] = useState<RoomEdits>(EMPTY_ROOM_EDITS);
+  const [checklists, setChecklists] = useState<Record<string, Partial<CourseChecklist>>>({});
   const [editedAt, setEditedAt] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
   /** One step of undo. Every mutation below snapshots into it before changing. */
-  const undoRef = useRef<{ assignments: Assignment[]; overrides: Record<string, CourseOverride> } | null>(null);
+  const undoRef = useRef<{
+    assignments: Assignment[];
+    overrides: Record<string, CourseOverride>;
+    roomEdits: RoomEdits;
+    checklists: Record<string, Partial<CourseChecklist>>;
+  } | null>(null);
 
   useEffect(() => {
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const parsed = JSON.parse(raw) as StoredPlan;
-        if (parsed?.version === 1 && Array.isArray(parsed.assignments)) {
+        if ((parsed?.version === 1 || parsed?.version === 2) && Array.isArray(parsed.assignments)) {
           setAssignments(sortAssignments(parsed.assignments));
           setOverrides(parsed.courseOverrides ?? {});
+          const stored = parsed.roomEdits;
+          setRoomEdits(
+            stored && Array.isArray(stored.added) && Array.isArray(stored.removed)
+              ? { overrides: stored.overrides ?? {}, added: stored.added, removed: stored.removed }
+              : EMPTY_ROOM_EDITS,
+          );
+          setChecklists(parsed.checklists ?? {});
           setEditedAt(parsed.editedAt ?? null);
         }
       }
@@ -57,12 +93,19 @@ export function usePlanState(payload: PlanPayload) {
   useEffect(() => {
     if (!ready || !editedAt) return;
     try {
-      const stored: StoredPlan = { version: 1, assignments, courseOverrides: overrides, editedAt };
+      const stored: StoredPlan = {
+        version: 2,
+        assignments,
+        courseOverrides: overrides,
+        roomEdits,
+        checklists,
+        editedAt,
+      };
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
     } catch {
       // Storage full or unavailable — the in-memory plan still stands.
     }
-  }, [assignments, overrides, editedAt, ready]);
+  }, [assignments, overrides, roomEdits, checklists, editedAt, ready]);
 
   /** Courses as they are now: the bundled data with a person's edits laid over. */
   const courses = useMemo(
@@ -70,9 +113,12 @@ export function usePlanState(payload: PlanPayload) {
     [payload.courses, overrides],
   );
 
+  /** Rooms as they are now — the seed, plus added, minus removed. */
+  const rooms = useMemo(() => mergeRooms(payload.rooms, roomEdits), [payload.rooms, roomEdits]);
+
   const conflicts: Conflict[] = useMemo(
-    () => detectConflicts({ courses, rooms: payload.rooms, assignments }),
-    [courses, payload.rooms, assignments],
+    () => detectConflicts({ courses, rooms, assignments }),
+    [courses, rooms, assignments],
   );
 
   /** Courses that still owe the week a period, and why they could not get one. */
@@ -84,20 +130,27 @@ export function usePlanState(payload: PlanPayload) {
       found.push({
         course,
         missing: course.sessionsPerWeek - placed,
-        reason: explainFailure({ course, courses, rooms: payload.rooms, placed: assignments }),
+        reason: explainFailure({ course, courses, rooms, placed: assignments }),
       });
     }
     return found;
-  }, [courses, assignments, payload.rooms]);
+  }, [courses, assignments, rooms]);
 
   const commit = useCallback(
-    (next: { assignments?: Assignment[]; overrides?: Record<string, CourseOverride> }) => {
-      undoRef.current = { assignments, overrides };
+    (next: {
+      assignments?: Assignment[];
+      overrides?: Record<string, CourseOverride>;
+      roomEdits?: RoomEdits;
+      checklists?: Record<string, Partial<CourseChecklist>>;
+    }) => {
+      undoRef.current = { assignments, overrides, roomEdits, checklists };
       if (next.assignments) setAssignments(sortAssignments(next.assignments));
       if (next.overrides) setOverrides(next.overrides);
+      if (next.roomEdits) setRoomEdits(next.roomEdits);
+      if (next.checklists) setChecklists(next.checklists);
       setEditedAt(new Date().toISOString());
     },
-    [assignments, overrides],
+    [assignments, overrides, roomEdits, checklists],
   );
 
   const undo = useCallback(() => {
@@ -106,6 +159,8 @@ export function usePlanState(payload: PlanPayload) {
     undoRef.current = null;
     setAssignments(previous.assignments);
     setOverrides(previous.overrides);
+    setRoomEdits(previous.roomEdits);
+    setChecklists(previous.checklists);
     setEditedAt(new Date().toISOString());
     return true;
   }, []);
@@ -119,10 +174,10 @@ export function usePlanState(payload: PlanPayload) {
    */
   const runAutoAssign = useCallback(() => {
     const locked = assignments.filter((item) => item.locked);
-    const result = planSchedule({ courses, rooms: payload.rooms, locked });
+    const result = planSchedule({ courses, rooms, locked });
     commit({ assignments: result.assignments });
     return result;
-  }, [assignments, courses, payload.rooms, commit]);
+  }, [assignments, courses, rooms, commit]);
 
   const place = useCallback(
     (courseId: string, slotId: SlotId, roomId: string | null) => {
@@ -193,6 +248,81 @@ export function usePlanState(payload: PlanPayload) {
     [assignments, commit],
   );
 
+  /* ---- rooms -------------------------------------------------------- */
+
+  const addRoom = useCallback(
+    (draft: RoomDraft) => {
+      // Ids are checked against every room the seed has ever carried, not just
+      // the visible ones: a removed room can come back with "คืนค่าเริ่มต้น",
+      // and two rooms sharing an id would then be one room with two names.
+      const taken = [...payload.rooms.map((room) => room.id), ...roomEdits.added.map((room) => room.id)];
+      const { edits, id } = addRoomTo(roomEdits, draft, taken);
+      commit({ roomEdits: edits });
+      return id;
+    },
+    [payload.rooms, roomEdits, commit],
+  );
+
+  const updateRoom = useCallback(
+    (roomId: string, patch: RoomOverride) => commit({ roomEdits: patchRoom(roomEdits, roomId, patch) }),
+    [roomEdits, commit],
+  );
+
+  /**
+   * Remove a room, and let go of whatever was in it.
+   *
+   * The classes are dropped in the same commit as the room, so one undo brings
+   * back both. Leaving them behind pointing at a room that no longer exists
+   * would be worse than either: the board would stop showing them while the
+   * counts still counted them.
+   */
+  const removeRoom = useCallback(
+    (roomId: string) => {
+      commit({
+        roomEdits: deleteRoom(roomEdits, roomId),
+        assignments: assignments.filter((item) => item.roomId !== roomId),
+      });
+    },
+    [roomEdits, assignments, commit],
+  );
+
+  /** Hold a period in a room for something that is not an elective, or let it go. */
+  const setBlocked = useCallback(
+    (roomId: string, slotId: SlotId, reason: string | null) => {
+      const room = rooms.find((item) => item.id === roomId);
+      if (!room) return;
+      commit({ roomEdits: setRoomBlocked(roomEdits, room, slotId, reason) });
+    },
+    [rooms, roomEdits, commit],
+  );
+
+  /* ---- the paperwork checklist -------------------------------------- */
+
+  /**
+   * One course's checklist, filled in from what was stored.
+   *
+   * Read through `readChecklist` rather than handed out raw: a course nobody
+   * has touched has no entry at all, and every caller wants the blank form
+   * rather than `undefined`.
+   */
+  const checklistFor = useCallback(
+    (courseId: string): CourseChecklist => readChecklist(checklists[courseId]),
+    [checklists],
+  );
+
+  /** Record one answer. Only the fields someone touched are ever stored. */
+  const setChecklistField = useCallback(
+    (courseId: string, patch: Partial<CourseChecklist>) =>
+      commit({ checklists: { ...checklists, [courseId]: { ...(checklists[courseId] ?? {}), ...patch } } }),
+    [checklists, commit],
+  );
+
+  /** How many classes sit in a room — what a delete is about to throw out. */
+  const assignmentsInRoom = useCallback(
+    (roomId: string) => assignments.filter((item) => item.roomId === roomId).length,
+    [assignments],
+  );
+
   const resetAll = useCallback(() => {
     try {
       window.localStorage.removeItem(STORAGE_KEY);
@@ -202,13 +332,15 @@ export function usePlanState(payload: PlanPayload) {
     undoRef.current = null;
     setAssignments([]);
     setOverrides({});
+    setRoomEdits(EMPTY_ROOM_EDITS);
+    setChecklists({});
     setEditedAt(null);
   }, []);
 
   return {
     ready,
     courses,
-    rooms: payload.rooms,
+    rooms,
     assignments,
     conflicts,
     gaps,
@@ -221,6 +353,13 @@ export function usePlanState(payload: PlanPayload) {
     setTime,
     setAvailability,
     setCourseField,
+    addRoom,
+    updateRoom,
+    removeRoom,
+    setBlocked,
+    checklistFor,
+    setChecklistField,
+    assignmentsInRoom,
     clearUnlocked,
     resetAll,
     undo,
