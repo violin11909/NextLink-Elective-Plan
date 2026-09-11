@@ -107,7 +107,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
     if (!result) return;
     show(
       result.unassigned.length
-        ? `จัดตารางแล้ว · ยังเหลือ ${formatNumber(result.unassigned.length)} วิชาที่ลงไม่ได้`
+        ? `ยังหาแผนให้ ${formatNumber(new Set(result.unassigned.map((item) => item.courseId)).size)} วิชาไม่พบภายในขอบเขตค้นหา`
         : `จัดตารางครบทั้ง ${formatNumber(result.assignments.length)} คาบแล้ว`,
       plan.undo,
     );
@@ -125,7 +125,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
     >
       <div className="intro-row">
         <div>
-          <p className="section-kicker">ภาคต้น ปีการศึกษา 2569</p>
+          <p className="section-kicker">{payload.term.label}</p>
           <h2>วางตารางสอนจากช่วงที่บริษัทสะดวก</h2>
           <p className="intro-copy">
             {/* แต่ละบริษัทแจ้งช่วงที่สอนได้ไม่เท่ากัน ระบบจะล็อกวิชาที่มีทางเลือกน้อยที่สุดก่อน แล้วปัดวิชาที่ยืดหยุ่นกว่าไปช่วงอื่น */}

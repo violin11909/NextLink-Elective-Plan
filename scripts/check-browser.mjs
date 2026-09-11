@@ -73,6 +73,29 @@ try {
     await go('/courses?period=INVALID');
     await page.getByRole('heading', { name: 'วิชาและช่วงที่สะดวก', exact: true }).waitFor();
   });
+  await check('Back and Forward restore both URL filters and visible controls', async () => {
+    await go('/courses/list?day=MON&period=AM');
+    await page.getByRole('combobox', { name: /วันที่สะดวก/ }).waitFor();
+    assert.equal(await page.getByRole('combobox', { name: /วันที่สะดวก/ }).inputValue(), 'MON');
+    await page.evaluate(() => { history.pushState(history.state, '', '?day=TUE&period=PM'); dispatchEvent(new PopStateEvent('popstate')); });
+    await page.waitForFunction(() => location.search.includes('day=TUE'));
+    assert.equal(await page.getByRole('combobox', { name: /คาบที่สะดวก/ }).inputValue(), 'PM');
+    await page.goBack();
+    await page.waitForFunction(() => location.search.includes('day=MON'));
+    assert.equal(await page.getByRole('combobox', { name: /วันที่สะดวก/ }).inputValue(), 'MON');
+    assert.equal(await page.getByRole('combobox', { name: /คาบที่สะดวก/ }).inputValue(), 'AM');
+    await page.goForward();
+    await page.waitForFunction(() => location.search.includes('day=TUE'));
+    assert.equal(await page.getByRole('combobox', { name: /วันที่สะดวก/ }).inputValue(), 'TUE');
+  });
+  await check('legacy onsite sessions without rooms are labelled honestly in UI and Excel', async () => {
+    await seed({ ...scheduled, assignments: scheduled.assignments.map((item) => item.courseId === courseId ? { ...item, roomId: null } : item) });
+    await go('/courses/list?q=SW%20Dev%20for%20CMMI%20Standard');
+    await page.locator('.room-tag').getByText('ยังไม่มีห้อง', { exact: true }).waitFor();
+    const pending = page.waitForEvent('download'); await page.getByRole('button', { name: 'ดาวน์โหลด Excel', exact: true }).click();
+    await (await pending).saveAs('output/browser/missing-room.xlsx');
+    assert.ok((await readFile('output/browser/missing-room.xlsx')).toString().includes('ยังไม่มีห้อง'));
+  });
   const blank = { ...scheduled, assignments: [], checklists: {}, revision: 0, editedAt: null };
   await seed(blank);
   await check('checklist ignores hidden placement filter and exports all matching rows', async () => {
@@ -116,7 +139,7 @@ try {
     await seed(blank); await go('/');
     await page.evaluate(() => { globalThis.restoreStorage = Storage.prototype.setItem; Storage.prototype.setItem = function () { throw new DOMException('Simulated quota', 'QuotaExceededError'); }; });
     await page.getByRole('button', { name: 'จัดตารางอัตโนมัติ', exact: true }).click();
-    await page.getByText('แผนยังบันทึกไม่สำเร็จ', { exact: true }).waitFor();
+    await page.getByText('แผนยังบันทึกไม่สำเร็จ', { exact: false }).waitFor();
     assert.equal((await read()).assignments.length, 0);
     assert.ok(await page.locator('.matrix-chip').count() > 0);
     const pending = page.waitForEvent('download'); await page.getByRole('button', { name: 'สำรองแผน JSON', exact: true }).click();
@@ -124,7 +147,7 @@ try {
     assert.ok(JSON.parse(await readFile('output/browser/unsaved-plan.json', 'utf8')).assignments.length > 0);
     await page.evaluate(() => { Storage.prototype.setItem = globalThis.restoreStorage; });
     await page.getByRole('button', { name: 'ลองบันทึกอีกครั้ง', exact: true }).click();
-    await page.getByText('บันทึกแล้วในเบราว์เซอร์นี้', { exact: true }).waitFor();
+    await page.getByText('บันทึกแล้วในเบราว์เซอร์นี้', { exact: false }).waitFor();
     assert.ok((await read()).assignments.length > 0);
   });
   await check('corrupt storage can be backed up and recovered from the page', async () => {

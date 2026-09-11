@@ -100,7 +100,7 @@ export function RoomDialog({
       </div>
 
       <div className="dialog-content">
-        {plan.error ? <p className="room-form-error" role="alert">{plan.error}</p> : null}
+        {target && plan.error ? <p className="room-form-error" role="alert">{plan.error}</p> : null}
         {/* A plain form, submitted by its own button: Enter in any field then
             does what Enter in a form does, without a keydown handler per input. */}
         <form

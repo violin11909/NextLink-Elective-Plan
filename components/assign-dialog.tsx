@@ -114,7 +114,7 @@ export function AssignDialog({
         <button className="icon-button" type="button" onClick={onClose} aria-label="ปิดหน้าต่าง">×</button>
       </div>
       <div className="dialog-content">
-        {plan.error ? <p className="room-form-error" role="alert">{plan.error}</p> : null}
+        {slotId && plan.error ? <p className="room-form-error" role="alert">{plan.error}</p> : null}
         <div className="detail-section">
           <h3>บริษัทแจ้งว่าสะดวกคาบนี้</h3>
           {options.offered.length === 0 ? (

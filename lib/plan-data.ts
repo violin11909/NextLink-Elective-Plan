@@ -4,6 +4,7 @@ import termIndexJson from "@/data/terms/index.json";
 import term25682Json from "@/data/terms/2568-2.json";
 import term25681Json from "@/data/terms/2568-1.json";
 import term25672Json from "@/data/terms/2567-2.json";
+import { assertSeedNumber, validateArchiveSessions } from "./seed-validation.ts";
 import { ALL_SLOTS, isSlotId, slotRank, type SlotId } from "./slots.ts";
 import type {
   ArchivedSession,
@@ -27,9 +28,8 @@ import type {
  *
  * Today it is JSON files bundled with the app: `data/plan-courses.json` and
  * `data/plan-rooms.json` for the term being planned, and one file per finished
- * term under `data/terms/`. When this moves to a database, only this file
- * changes — every component above it takes a `PlanPayload` or an
- * `ArchivedTerm` and has no opinion about its origin.
+ * term under `data/terms/`. Database-backed reads can replace this loader;
+ * shared writes also need an API, authorization and transactional persistence.
  */
 
 /**
@@ -102,6 +102,9 @@ function readSlots(where: string, values: unknown): SlotId[] {
 }
 
 function readRoom(raw: (typeof roomsJson)["rooms"][number]): PlanRoom {
+  if (raw.tier !== "READY" && raw.tier !== "NEEDS_APPROVAL") throw new Error(`room ${raw.id}: unknown tier ${raw.tier}`);
+  assertSeedNumber(`room ${raw.id} seats`, raw.seats, 1, 2000);
+  if (new Set(raw.blockedSlots.map((entry) => entry.slotId)).size !== raw.blockedSlots.length) throw new Error(`room ${raw.id}: duplicate blocked slot`);
   return {
     id: raw.id,
     name: raw.name,
@@ -120,6 +123,11 @@ function readRoom(raw: (typeof roomsJson)["rooms"][number]): PlanRoom {
 }
 
 function readCourse(raw: RawCourse): PlanCourse {
+  if (!["ONLINE", "HYBRID", "ON_SITE"].includes(raw.deliveryMode)) throw new Error(`course ${raw.id}: unknown delivery mode ${raw.deliveryMode}`);
+  assertSeedNumber(`course ${raw.id} sessionsPerWeek`, raw.sessionsPerWeek, 1, 18);
+  assertSeedNumber(`course ${raw.id} capacity`, raw.capacity, 0, 10000);
+  assertSeedNumber(`course ${raw.id} minSeats`, raw.minSeats, 0, 10000);
+  assertSeedNumber(`course ${raw.id} weeks`, raw.weeks, 1, 52);
   const availability = readSlots(`course ${raw.courseCode}`, raw.availability);
   if (raw.sessionsPerWeek > availability.length) {
     throw new Error(
@@ -150,6 +158,7 @@ function readSeason(where: string, value: string): TermSeason {
 }
 
 function readTermMeta(raw: (typeof termIndexJson)["terms"][number]): TermMeta {
+  if (raw.status !== "CURRENT" && raw.status !== "ARCHIVED") throw new Error(`term ${raw.id}: unknown status ${raw.status}`);
   return {
     id: raw.id,
     academicYear: raw.academicYear,
@@ -236,7 +245,7 @@ function readArchive(raw: RawArchive, index: Map<string, TermMeta>): ArchivedTer
   const meta = index.get(raw.term.id);
   if (!meta) throw new Error(`${where}: term "${raw.term.id}" is not listed in data/terms/index.json`);
   if (meta.status !== "ARCHIVED") throw new Error(`${where}: term "${raw.term.id}" is not marked ARCHIVED in the index`);
-  if (meta.label !== raw.term.label) {
+  if (meta.label !== raw.term.label || meta.shortLabel !== raw.term.shortLabel || meta.academicYear !== raw.term.academicYear || meta.season !== raw.term.season || raw.term.status !== "ARCHIVED") {
     throw new Error(`${where}: label "${raw.term.label}" disagrees with the index's "${meta.label}"`);
   }
 
@@ -274,6 +283,7 @@ function readArchive(raw: RawArchive, index: Map<string, TermMeta>): ArchivedTer
     }
   }
 
+  validateArchiveSessions(courses, sessions);
   return { term: meta, dataset: raw.dataset, lastUpdated: raw.lastUpdated, isMock: raw.isMock, courses, sessions };
 }
 

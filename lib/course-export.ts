@@ -60,7 +60,7 @@ function statusText(course: PlanCourse, placed: PlacedPeriod[]): string {
 
 function roomText(course: PlanCourse, placed: PlacedPeriod[]): string {
   if (course.deliveryMode === "ONLINE") return "ออนไลน์";
-  const rooms = placed.map((period) => period.roomLabel ?? "ออนไลน์");
+  const rooms = placed.map((period) => period.roomLabel ?? "ยังไม่มีห้อง");
   return rooms.join(", ");
 }
 

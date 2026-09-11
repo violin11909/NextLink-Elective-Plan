@@ -112,7 +112,7 @@ function useController(payload: PlanPayload) {
   }), [store, payload]);
 
   return {
-    ...commands, ...snapshot, planning, courses, rooms, assignments, conflicts, gaps, editedAt: document.editedAt,
+    ...commands, ...snapshot, planning, term: payload.term, courses, rooms, assignments, conflicts, gaps, editedAt: document.editedAt,
     undo: store.undo, retry: store.retry, reload: store.reload, recoverEmpty: store.recoverEmpty,
     checklistFor: (id: string) => readChecklist(document.checklists[id]),
     assignmentsInRoom: (id: string) => assignments.filter((item) => item.roomId === id).length,

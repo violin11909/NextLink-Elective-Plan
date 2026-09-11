@@ -604,7 +604,7 @@ export function CourseList({
                           <span className="status-stack">
                             {placed.map((item) => (
                               <span className="room-tag" key={item.key}>
-                                {item.roomLabel ?? "ออนไลน์"}
+                                {item.roomLabel ?? "ยังไม่มีห้อง"}
                               </span>
                             ))}
                           </span>

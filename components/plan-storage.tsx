@@ -21,6 +21,7 @@ export function PlanStorage() {
     <section className="plan-storage" aria-label="การบันทึกแผน">
       <div className="plan-storage-actions">
         <span role="status">
+          แผน {plan.term.shortLabel} · {" "}
           {plan.planning ? "กำลังจัดตาราง…" : plan.status === "loading" ? "กำลังโหลดแผน…" : plan.status === "saving" ? "กำลังบันทึก…" : plan.status === "error" ? "แผนยังบันทึกไม่สำเร็จ" : plan.editedAt ? "บันทึกแล้วในเบราว์เซอร์นี้" : "ยังไม่มีการแก้ไขแผน"}
         </span>
         {plan.planning ? <button type="button" className="secondary-button" onClick={plan.cancelPlanning}>ยกเลิกการจัดตาราง</button> : null}

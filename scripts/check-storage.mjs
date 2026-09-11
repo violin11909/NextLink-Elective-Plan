@@ -37,6 +37,8 @@ await check('quota failure keeps a recoverable draft and retry persists it', asy
   store.refresh(); assert.equal(store.getSnapshot().document.checklists[id].mcvJoinCode, 'ABC123');
   persistence.fail = false; assert.equal(await store.retry(), true);
   assert.equal(decodePlan(persistence.read(store.key), payload).document.checklists[id].mcvJoinCode, 'ABC123');
+  assert.equal(await store.undo(), true);
+  assert.deepEqual(store.getSnapshot().document.checklists, {});
 });
 await check('unsaved draft cannot overwrite a later change from another tab', async () => {
   const persistence = disk(); const a = new PlanStore(payload, persistence), b = new PlanStore(payload, persistence); a.load(); b.load();

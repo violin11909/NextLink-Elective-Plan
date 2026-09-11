@@ -112,7 +112,14 @@ export class PlanStore {
 
   retry = async (): Promise<boolean> => {
     if (!this.dirty) { this.refresh(); return this.snapshot.status === "saved"; }
-    return this.mutate((document) => document);
+    const previous = this.undoEntry;
+    const saved = await this.mutate((document) => document);
+    // Retrying persistence is not a new user edit. Keep the original undo.
+    if (saved && previous) {
+      this.undoEntry = { before: previous.before, afterRevision: this.snapshot.document.revision };
+      this.publish({ canUndo: true });
+    }
+    return saved;
   };
 
   undo = async (): Promise<boolean> => {
