@@ -260,7 +260,7 @@ export function CourseList({
     const labels: Record<string, string> = field.kind === "receipt" ? RECEIPT_LABELS : DONE_LABELS;
     return (
       <select
-        className={`checklist-select${field.kind === "receipt" ? " is-wide" : ""} tone-${checklistTone(checklist, field)}`}
+        className={`checklist-select tone-${checklistTone(checklist, field)}`}
         value={checklist[field.key]}
         aria-label={`${field.label} — ${courseTitle}`}
         onChange={(event) => plan.setChecklistField(courseId, checklistPatch(field, event.target.value))}
@@ -447,6 +447,20 @@ export function CourseList({
                  why the columns are headed with a phrase and the full step is
                  on the control's own label for anyone who needs it read out. */
               <table className="checklist-table">
+                {/* Declared widths, not measured ones. The table is laid out
+                    fixed so every status column is the same width whatever is
+                    inside it — otherwise the two columns holding the longest
+                    answer come out wider than the rest, and a row of controls
+                    that should read as one row of the same thing reads as
+                    several. Percentages so the whole thing still fits when a
+                    sidebar takes a slice of the page. */}
+                <colgroup>
+                  <col style={{ width: "17%" }} />
+                  <col style={{ width: "9%" }} />
+                  {CHECKLIST_FIELDS.map((field) => (
+                    <col key={field.key} style={{ width: field.kind === "code" ? "8%" : "11%" }} />
+                  ))}
+                </colgroup>
                 <thead>
                   <tr>
                     <th scope="col">วิชา</th>

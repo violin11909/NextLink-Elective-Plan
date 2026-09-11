@@ -687,23 +687,35 @@ out — but it should never happen without the reader seeing it. */
 .view-switch-button { min-height: 34px; padding: 6px 14px; border: 0; border-radius: 8px; color: var(--muted); background: transparent; font-size: 13px; font-weight: 800; }
 .view-switch-button:hover { color: #2f5cb8; }
 .view-switch-button.is-active { color: #203252; background: #fff; box-shadow: 0 1px 3px rgba(30, 49, 80, .12); }
-/* Sized to sit inside the panel rather than run off the right of it. Nine
-   columns fit because only the two letter columns carry a long label —
-   "กำลังดำเนินการ", which must never be cut to "กำลังดำเนิน…" — and the rest
-   hold two short words. Tight cell padding buys the rest. */
-.checklist-table { min-width: 1120px; }
+/* Fixed layout, widths declared in the markup's <colgroup>. Every status
+   column is then the same width whatever sits in it — with automatic layout
+   the two columns holding "กำลังดำเนินการ" came out wider than their
+   neighbours, and a row of identical controls read as a ragged one. The
+   min-width is the point below which the columns would be too narrow for
+   their own labels; under that the table scrolls inside its box. */
+.checklist-table { min-width: 1060px; table-layout: fixed; }
+/* The reference table bleeds into the panel's padding on purpose — it is a
+   wide table of text and the extra 44px is worth having. This one is a form,
+   and a control hard against the panel's edge reads as clipped, so the
+   checklist keeps the panel's own margins. Padding on the end cells would do
+   the same thing, except it would come out of those two columns and leave
+   their controls narrower than the five in the middle. */
+.table-wrap:has(.checklist-table) { margin-inline: 0; }
 /* The reference table's header style shouts in capitals, which is fine for
    Thai and wrong for "instructor" and "Join MCV" — those are names of
    things in MCV, and MCV does not write them that way. */
-.checklist-table th { text-transform: none; white-space: normal; }
+/* `pre-line` so a header can say where it wants to break — see the "+" in
+   CHECKLIST_FIELDS. Left to itself, Chrome breaks Thai wherever it fits. */
+.checklist-table th { text-transform: none; white-space: pre-line; }
 .checklist-table th, .checklist-table td { padding-right: 7px; padding-left: 7px; }
 .checklist-table td { padding-top: 9px; padding-bottom: 9px; vertical-align: middle; }
 .checklist-table tr.is-complete td { background: #f7fdfa; }
-.checklist-select { width: 100%; min-width: 96px; min-height: 36px; padding: 0 8px; border: 1px solid #dce2ec; border-radius: 8px; font-size: 12px; font-weight: 800; }
+/* One size for all seven, and the small one: the controls sit inside their
+   column rather than filling it, so the row reads as seven of the same thing
+   rather than seven boxes of assorted widths. */
+.checklist-select { width: 100%; max-width: 118px; min-height: 34px; padding: 0 6px; border: 1px solid #dce2ec; border-radius: 8px; font-size: 12px; font-weight: 800; }
 .checklist-select:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); outline: 0; }
 /* A join code is copied character by character into another site, so it is
    shown in a face where 0 and O are not the same shape. */
-.checklist-code { width: 100%; min-width: 104px; min-height: 36px; padding: 0 9px; border: 1px solid #dce2ec; border-radius: 8px; color: var(--ink); background: #fbfcfe; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.checklist-code { width: 100%; max-width: 92px; min-height: 34px; padding: 0 7px; border: 1px solid #dce2ec; border-radius: 8px; color: var(--ink); background: #fbfcfe; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
 .checklist-code:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); outline: 0; }
-/* The two letter columns, whose longest answer is three syllables longer. */
-.checklist-select.is-wide { min-width: 124px; }

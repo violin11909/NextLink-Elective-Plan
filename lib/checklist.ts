@@ -73,7 +73,10 @@ export const CHECKLIST_FIELDS: ChecklistField[] = [
     key: "teachingHoursLetter",
     kind: "receipt",
     label: "ทำจดหมายและแจ้งจำนวนชั่วโมงสอน",
-    short: "จดหมาย + ชั่วโมงสอน",
+    // The break is written in rather than left to the browser: the only space
+    // in this phrase is after the "+", so an automatic wrap puts "สอน" alone
+    // on the second line — Chrome breaks Thai mid-phrase when it has to.
+    short: "จดหมาย +\nชั่วโมงสอน",
   },
   {
     key: "mcvInstructorRequest",
