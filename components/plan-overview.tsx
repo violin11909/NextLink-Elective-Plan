@@ -12,7 +12,8 @@ import { Pager } from "@/components/pager";
 import { StatusToast, useStatusToast } from "@/components/status-toast";
 import { BLOCKER_LABELS } from "@/lib/blocker-labels.ts";
 import { formatNumber } from "@/lib/format";
-import { ALL_SLOTS, slotLabel } from "@/lib/slots.ts";
+import { planMetrics } from "@/lib/plan-metrics.ts";
+import { slotLabel } from "@/lib/slots.ts";
 import type { PlanCourse, PlanPayload, Suggestion } from "@/lib/plan-types.ts";
 import { usePlanState } from "@/lib/use-plan-state";
 
@@ -41,19 +42,11 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
   const totalSessions = plan.courses.reduce((sum, course) => sum + course.sessionsPerWeek, 0);
   /** Companies that have not answered yet — nothing can be planned for these. */
   const awaitingAvailability = plan.courses.filter((course) => course.availability.length === 0).length;
-  /** Cards on the board carrying a warning, which is what the red borders mark. */
-  const flaggedCards = plan.assignments.filter((item) =>
-    plan.conflicts.some((conflict) => conflict.assignmentIds.includes(item.id)),
-  ).length;
   const needsApproval = plan.assignments.filter(
     (item) => item.roomId && roomsById.get(item.roomId)?.tier === "NEEDS_APPROVAL",
   ).length;
 
-  const readyCapacity = plan.rooms
-    .filter((room) => room.tier === "READY")
-    .reduce((sum, room) => sum + (ALL_SLOTS.length - room.blockedSlots.length), 0);
-  const roomSlotsUsed = plan.assignments.filter((item) => item.roomId).length;
-  const utilisation = readyCapacity ? Math.round((roomSlotsUsed / readyCapacity) * 100) : 0;
+  const { readyCapacity, roomSlotsUsed, utilisation, flaggedCourses } = planMetrics(plan.rooms, plan.assignments, plan.conflicts);
   const placedPercent = totalSessions ? Math.round((plan.assignments.length / totalSessions) * 100) : 0;
 
   const followUpPageCount = Math.max(1, Math.ceil(plan.conflicts.length / FOLLOW_UP_PAGE_SIZE));
@@ -166,12 +159,12 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           <span className="kpi-topline">
             <span className="kpi-label">วิชาที่ยังมีปัญหา</span>
           </span>
-          <p className="kpi-value">{formatNumber(flaggedCards)}</p>
-          {/* <p className="kpi-note">การ์ดในตารางที่ขึ้นเตือน — กดดูเหตุผลได้ใต้การ์ดนั้น</p> */}
+          <p className="kpi-value">{formatNumber(flaggedCourses)}</p>
+          <p className="kpi-note">นับวิชาไม่ซ้ำ รวมวิชาที่ยังจัดไม่ครบ</p>
         </div>
         <div className="kpi-card purple">
           <span className="kpi-topline">
-            <span className="kpi-label">การใช้ห้องจุฬาพัฒน์</span>
+            <span className="kpi-label">การใช้ห้องที่พร้อมใช้</span>
             <span className="kpi-context">{utilisation}%</span>
           </span>
           <p className="kpi-value compact">
@@ -180,7 +173,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
           <span className="kpi-progress">
             <span className="kpi-progress-fill purple" style={{ width: `${Math.min(utilisation, 100)}%` }} />
           </span>
-          {/* <p className="kpi-note">คาบ-ห้องที่ใช้ไป เทียบกับที่ภาคใช้ได้ทันที</p> */}
+          <p className="kpi-note">คาบ-ห้องที่ใช้ / คาบที่ว่างให้ใช้ได้ ไม่รวมห้องรออนุมัติ</p>
         </div>
         <div className="kpi-card orange">
           <span className="kpi-topline">
