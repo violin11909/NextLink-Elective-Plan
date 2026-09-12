@@ -22,6 +22,7 @@ export function PlanShell({
   isMock,
   editedAt,
   onReset,
+  planTools = false,
   children,
 }: {
   eyebrow: string;
@@ -31,6 +32,8 @@ export function PlanShell({
   isMock: boolean;
   editedAt: string | null;
   onReset: () => void;
+  /** Show the whole-plan file buttons. The overview asks for them; see PlanStorage. */
+  planTools?: boolean;
   children: ReactNode;
 }) {
   const plan = usePlanState();
@@ -67,7 +70,7 @@ export function PlanShell({
         </div>
       </header>
       <main className="page-content">
-        <PlanStorage />
+        <PlanStorage tools={planTools} />
         {plan.ready && plan.recoveryRaw === null ? children : <p role="status">{plan.ready ? "กู้คืนข้อมูลจากแถบด้านบนเพื่อเปิดแผน" : "กำลังโหลดแผน…"}</p>}
       </main>
     </div>

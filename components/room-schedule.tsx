@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AssignDialog } from "@/components/assign-dialog";
@@ -34,6 +34,12 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
   const [announcement, setAnnouncement] = useState("");
   const [roomForm, setRoomForm] = useState<RoomFormTarget | null>(null);
   const [booking, setBooking] = useState<BookingTarget | null>(null);
+
+  // A refused move is reported by the store into the save bar at the top of
+  // the page. This grid is where the move was attempted, so it says it here.
+  useEffect(() => {
+    if (plan.error) show(plan.error);
+  }, [plan.error, show]);
 
   const room = plan.rooms.find((item) => item.id === roomId) ?? null;
   const coursesById = useMemo(() => new Map(plan.courses.map((course) => [course.id, course])), [plan.courses]);

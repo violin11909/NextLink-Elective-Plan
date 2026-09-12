@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { BookingDialog, type BookingTarget } from "@/components/booking-dialog";
@@ -35,6 +35,19 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
   const anchorRef = useRef<number | null>(null);
 
   const onHeldChange = useCallback((course: PlanCourse | null) => setHolding(course), []);
+
+  /**
+   * Say refusals where the work is happening.
+   *
+   * A rule the plan enforces — "วิชานี้มีคาบในช่วงปลายทางแล้ว" — is reported by
+   * the store into the save bar at the top of the page, which is nowhere near
+   * the board someone is dragging cards around in. Without this the card
+   * simply refuses to move and nothing on screen says why.
+   */
+  useEffect(() => {
+    if (plan.error) show(plan.error);
+  }, [plan.error, show]);
+
 
   const roomsById = useMemo(() => new Map(plan.rooms.map((room) => [room.id, room])), [plan.rooms]);
   const coursesById = useMemo(() => new Map(plan.courses.map((course) => [course.id, course])), [plan.courses]);
@@ -122,6 +135,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
       isMock={payload.isMock}
       editedAt={plan.editedAt}
       onReset={plan.resetAll}
+      planTools
     >
       <div className="intro-row">
         <div>

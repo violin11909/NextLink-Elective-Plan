@@ -34,7 +34,7 @@ try {
     page.on('dialog', (dialog) => dialog.accept());
   };
   const page = await context.newPage(); watch(page);
-  const go = async (path) => { await page.goto(base + path); await page.getByRole('button', { name: 'สำรองแผน JSON', exact: true }).waitFor(); };
+  const go = async (path) => { await page.goto(base + path); await page.getByRole('region', { name: 'การบันทึกแผน' }).waitFor(); };
   const read = () => page.evaluate((key) => JSON.parse(localStorage.getItem(key)), key);
   const seed = async (document) => { await page.evaluate(({ key, document }) => { localStorage.clear(); localStorage.setItem(key, JSON.stringify(document)); }, { key, document }); };
   await go('/');
@@ -51,6 +51,20 @@ try {
     await cards.first().click(); await cards.nth(1).click();
     await page.getByRole('region', { name: 'การบันทึกแผน' }).getByText('วิชานี้มีคาบในช่วงปลายทางแล้ว กรุณาเลือกคาบอื่น', { exact: true }).waitFor();
     assert.deepEqual((await read()).assignments, scheduled.assignments);
+    // The reason is said at the board too, not only in the save bar above it.
+    await page.locator('.toast-message').getByText('วิชานี้มีคาบในช่วงปลายทางแล้ว กรุณาเลือกคาบอื่น', { exact: true }).waitFor();
+  });
+  await check('a refused move puts the card down instead of freezing the board', async () => {
+    // A card left held turns every cell into a drop target, so the next click
+    // on any card is swallowed as another drop: the board stops responding.
+    assert.equal(await page.locator('.matrix-chip.is-held').count(), 0);
+    assert.equal(await page.locator('td.matrix-cell.is-drop-ok, td.matrix-cell.is-drop-blocked').count(), 0);
+    const other = page.locator('.matrix-chip').filter({ hasText: 'Secure Software & Threat Modeling' }).first();
+    await other.click();
+    await page.locator('.matrix-chip.is-held').filter({ hasText: 'Secure Software & Threat Modeling' }).waitFor();
+    // ...and Escape is a way out of placing mode from anywhere on the page.
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.querySelectorAll('.matrix-chip.is-held').length === 0);
   });
   await go('/');
   await check('onsite course cannot be moved into the online column', async () => {
@@ -159,16 +173,26 @@ try {
     await page.getByRole('button', { name: 'จัดตารางอัตโนมัติ', exact: true }).waitFor();
     assert.deepEqual((await read()).assignments, []);
   });
-  await check('deleting a room from detail can be undone after client navigation', async () => {
+  await check('deleting a room from detail drops its sessions and leaves the list without it', async () => {
     await seed(scheduled); const target = scheduled.assignments.find((item) => item.roomId);
     await go('/rooms/' + target.roomId);
+    const roomName = (await page.locator('h2').first().innerText()).replace('ตารางสอนของ ', '');
     await page.getByRole('button', { name: 'แก้ไขห้องนี้', exact: true }).click();
     await page.getByRole('button', { name: 'ลบห้องนี้', exact: true }).click();
     await page.getByRole('button', { name: 'ยืนยันลบ', exact: true }).click();
     await page.waitForURL(base + '/rooms');
     assert.equal((await read()).assignments.some((item) => item.roomId === target.roomId), false);
-    const undo = page.getByRole('button', { name: 'เลิกทำรายการล่าสุด', exact: true });
-    await undo.click();
+    assert.equal(await page.locator('.room-card-shell').filter({ hasText: roomName }).count(), 0);
+  });
+  await check('deleting a room from the list can be undone from its toast', async () => {
+    await seed(scheduled); const target = scheduled.assignments.find((item) => item.roomId);
+    await go('/rooms');
+    const card = page.locator('.room-card-shell').filter({ has: page.locator(`a[href="/rooms/${target.roomId}"]`) });
+    await card.locator('button.room-card-edit').click();
+    await page.getByRole('button', { name: 'ลบห้องนี้', exact: true }).click();
+    await page.getByRole('button', { name: 'ยืนยันลบ', exact: true }).click();
+    await page.waitForFunction(({ key, roomId }) => !JSON.parse(localStorage.getItem(key)).assignments.some((item) => item.roomId === roomId), { key, roomId: target.roomId });
+    await page.getByRole('button', { name: 'เลิกทำ', exact: true }).click();
     await page.waitForFunction(({ key, roomId }) => JSON.parse(localStorage.getItem(key)).assignments.some((item) => item.roomId === roomId), { key, roomId: target.roomId });
     assert.deepEqual((await read()).assignments, scheduled.assignments);
   });
@@ -185,20 +209,28 @@ try {
     assert.deepEqual(await read(), before);
     await page.reload();
   });
-  await check('valid backup import and reset can both be undone', async () => {
-    await go('/courses/list?view=checklist');
+  await check('the plan file is imported and reset from the overview, and nowhere else', async () => {
+    await seed(scheduled); await go('/');
     const before = await read();
     const imported = { ...before, checklists: { [courseId]: { mcvJoinCode: 'IMPORTED' } } };
     await page.locator('input[type=file]').setInputFiles({ name: 'plan.json', mimeType: 'application/json', buffer: Buffer.from(JSON.stringify(imported)) });
     await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key)).checklists['plan-21105801']?.mcvJoinCode === 'IMPORTED', key);
-    await page.getByRole('button', { name: 'เลิกทำรายการล่าสุด', exact: true }).click();
-    await page.waitForFunction((key) => !JSON.parse(localStorage.getItem(key)).checklists['plan-21105801']?.mcvJoinCode, key);
     assert.deepEqual((await read()).assignments, before.assignments);
     await page.getByRole('button', { name: 'คืนค่าเริ่มต้น', exact: true }).click();
     await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key)).assignments.length === 0, key);
-    await page.getByRole('button', { name: 'เลิกทำรายการล่าสุด', exact: true }).click();
-    await page.waitForFunction((key) => JSON.parse(localStorage.getItem(key)).assignments.length > 0, key);
-    assert.deepEqual((await read()).assignments, before.assignments);
+    // The pages that only read the plan carry the status line, and none of the
+    // three whole-plan buttons.
+    for (const path of ['/rooms', '/courses/list', '/courses']) {
+      await go(path);
+      await page.getByRole('region', { name: 'การบันทึกแผน' }).waitFor();
+      for (const name of ['สำรองแผน JSON', 'นำเข้าแผน', 'เลิกทำรายการล่าสุด']) {
+        assert.equal(await page.getByRole('button', { name, exact: true }).count(), 0, `${name} on ${path}`);
+      }
+      assert.equal(await page.locator('input[type=file]').count(), 0, `file input on ${path}`);
+    }
+    await go('/');
+    assert.equal(await page.getByRole('button', { name: 'สำรองแผน JSON', exact: true }).count(), 1);
+    assert.equal(await page.getByRole('button', { name: 'เลิกทำรายการล่าสุด', exact: true }).count(), 0);
   });
   await check('archive export, mobile layout and all production assets remain usable', async () => {
     await go('/courses/list?term=2568-2');

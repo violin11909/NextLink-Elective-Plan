@@ -12,8 +12,20 @@ function download(raw: string, term: string) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
-/** Persistent controls live with the layout's store, including undo after navigation. */
-export function PlanStorage() {
+/**
+ * The plan's own status line, and the file it can be carried in.
+ *
+ * Rendered by the shell, so the status and the recovery box follow the reader
+ * to every page: a save that fails while someone is editing rooms has to say
+ * so where they are, not where they started.
+ *
+ * The backup and import buttons are the exception — `tools` is set only by the
+ * overview. They act on the whole plan rather than on the page they are
+ * pressed from, so repeating them on four pages made them look like
+ * page-level actions and put "replace everything" one stray click away from
+ * every screen.
+ */
+export function PlanStorage({ tools = false }: { tools?: boolean }) {
   const plan = usePlanState();
   const file = useRef<HTMLInputElement>(null);
   const backup = () => download(plan.recoveryRaw ?? JSON.stringify(plan.document, null, 2), plan.document.termId);
@@ -24,16 +36,21 @@ export function PlanStorage() {
           แผน {plan.term.shortLabel} · {" "}
           {plan.planning ? "กำลังจัดตาราง…" : plan.status === "loading" ? "กำลังโหลดแผน…" : plan.status === "saving" ? "กำลังบันทึก…" : plan.status === "error" ? "แผนยังบันทึกไม่สำเร็จ" : plan.editedAt ? "บันทึกแล้วในเบราว์เซอร์นี้" : "ยังไม่มีการแก้ไขแผน"}
         </span>
+        {/* Cancelling stays wherever the reader is: planning keeps running
+            after a navigation, so the way to stop it has to as well. */}
         {plan.planning ? <button type="button" className="secondary-button" onClick={plan.cancelPlanning}>ยกเลิกการจัดตาราง</button> : null}
-        <button type="button" className="secondary-button" disabled={!plan.ready} onClick={backup}>สำรองแผน JSON</button>
-        <button type="button" className="secondary-button" disabled={!plan.ready || plan.recoveryRaw !== null} onClick={() => file.current?.click()}>นำเข้าแผน</button>
-        <button type="button" className="secondary-button" disabled={!plan.canUndo || plan.status === "saving"} onClick={() => void plan.undo()}>เลิกทำรายการล่าสุด</button>
-        <input ref={file} className="sr-only" type="file" accept=".json,application/json" aria-label="ไฟล์แผน JSON" onChange={async (event) => {
-          const selected = event.target.files?.[0];
-          event.target.value = "";
-          if (!selected || !window.confirm("แทนที่แผนปัจจุบันด้วยไฟล์นี้? สามารถเลิกทำรายการล่าสุดได้")) return;
-          await plan.importPlan(await selected.text());
-        }} />
+        {tools ? (
+          <>
+            <button type="button" className="secondary-button" disabled={!plan.ready} onClick={backup}>สำรองแผน JSON</button>
+            <button type="button" className="secondary-button" disabled={!plan.ready || plan.recoveryRaw !== null} onClick={() => file.current?.click()}>นำเข้าแผน</button>
+            <input ref={file} className="sr-only" type="file" accept=".json,application/json" aria-label="ไฟล์แผน JSON" onChange={async (event) => {
+              const selected = event.target.files?.[0];
+              event.target.value = "";
+              if (!selected || !window.confirm("แทนที่แผนปัจจุบันด้วยไฟล์นี้? สามารถเลิกทำรายการล่าสุดได้")) return;
+              await plan.importPlan(await selected.text());
+            }} />
+          </>
+        ) : null}
       </div>
       {plan.error ? (
         <div className="plan-storage-error" role="alert">

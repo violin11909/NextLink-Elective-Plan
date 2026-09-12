@@ -18,13 +18,14 @@ Branch: `fix/planner-audit-findings` เริ่มจาก `be97a4af7c08c5d19
 | 10 | placement filter ซ่อนแต่ยังกรอง checklist | ใช้เฉพาะมุมมองตาราง ล้างเมื่อสลับ และเอาออกจาก URL; browser ตรวจ 18 วิชาและ Excel |
 | 11 | Join MCV เหลืออักษรตัวแรก | เก็บ draft และตรึงแถวที่กำลังกรอกจน blur; browser พิมพ์ ABC123 ภายใต้ incomplete filter แล้ว reload |
 | 12 | URL period ไม่ถูกต้องทำให้ crash | whitelist day/period ก่อน render; browser ตรวจค่าผิดและ Back/Forward |
-| 13 | ลบห้องจาก detail แล้ว undo หาย | undo อยู่กับ provider ข้าม route; browser คืนห้องและ assignments หลัง navigate |
+| 13 | ลบห้องจาก detail แล้ว undo หาย | undo อยู่กับ provider ข้าม route · ภายหลังตามคำขอ ปุ่ม "เลิกทำรายการล่าสุด" บนแถบถูกเอาออก undo จึงอยู่ที่ปุ่มใน toast — ลบจากหน้ารายชื่อห้อง undo ได้ (browser regression) ส่วนลบจาก detail ที่เด้งกลับ /rooms ทันทีจึงย้อนไม่ได้ |
 | 14 | KPI ตัวตั้ง/ตัวหารคนละกลุ่ม | นับ distinct READY room/slot ที่ใช้ได้ และ distinct courseIds ของทุก conflict; metrics checks |
+| 15 | กระดานค้างหลังการย้ายที่ถูกปฏิเสธ | การ์ดถูกวางลงเสมอไม่ว่าคำสั่งจะผ่านหรือไม่ (การ์ดที่ยังถูกถืออยู่ทำให้ทุกช่องเป็นเป้าวาง คลิกการ์ดใบอื่นจึงถูกกลืนเป็นการวางซ้ำ) · Escape ปล่อยการ์ดได้ · เหตุผลที่ถูกปฏิเสธขึ้นเป็น toast ข้างกระดาน ไม่ใช่เฉพาะแถบบนสุด; browser regression |
 
 ## งานปรับปรุงประกอบ
 
 - Storage v3 แยกเทอม มี dataset/seedRevision/revision ตรวจ migration จาก v1/v2 และไม่เขียนทับงานใหม่จากอีกแท็บเมื่อ retry
-- สำรอง/นำเข้า JSON และ reset ที่ยืนยันก่อนทำและเลิกทำได้ แถบบันทึกระบุเทอมของแผนปัจจุบัน
+- สำรอง/นำเข้า JSON (หน้าภาพรวมแผน) และ reset ที่ยืนยันก่อนทำ แถบบันทึกระบุเทอมของแผนปัจจุบันทุกหน้า
 - Web Worker สำหรับการค้นหาตาราง พร้อมยกเลิกและ timeout 30 วินาที แผนเดิมอยู่ครบเมื่อยกเลิก
 - Archive ตรวจผู้สอนชน คาบซ้ำ รูปแบบการสอนกับห้อง และ metadata ตรงกับ index; seed ปฏิเสธ enum/ตัวเลขผิดแทนการเลือกค่าเริ่มต้นที่อาจทำให้ห้องถูกมองว่า READY
 - README และ data model ตรงกับ storage และจำนวนห้องปัจจุบัน แยกบันทึก implementation รุ่นเก่าให้ชัด
