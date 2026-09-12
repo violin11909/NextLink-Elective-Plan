@@ -37,7 +37,7 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
     {
       tier: "NEEDS_APPROVAL",
       heading: "ต้องขออนุมัติก่อนใช้",
-      caption: "ห้องของคณะวิศวะ ต้องยื่นเรื่องหลายขั้นตอน ใช้เมื่อจุฬาพัฒน์ไม่พอ",
+      caption: "ห้องของคณะวิศวะฯ ต้องยื่นเรื่องหลายขั้นตอน ใช้เมื่อจุฬาพัฒน์ไม่พอ",
     },
   ];
 
@@ -71,7 +71,7 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
             <div className="panel-heading">
               <div>
                 <p className="section-kicker">
-                  {group.tier === "READY" ? "จุฬาพัฒน์" : "อาคารคณะวิศวกรรมศาสตร์"}
+                  {group.tier === "READY" ? "อาคารจุฬาพัฒน์" : "อาคารคณะวิศวกรรมศาสตร์"}
                 </p>
                 <h3>{group.heading}</h3>
               </div>
@@ -134,21 +134,21 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
         target={roomForm}
         rooms={plan.rooms}
         assignedCount={roomForm?.room ? plan.assignmentsInRoom(roomForm.room.id) : 0}
-        onSave={(draft) => {
+        onSave={async (draft) => {
           if (roomForm?.room) {
-            plan.updateRoom(roomForm.room.id, draft);
+            if (!await plan.updateRoom(roomForm.room.id, draft)) return;
             show(`บันทึก ${draft.name} แล้ว`, plan.undo);
           } else {
-            plan.addRoom(draft);
+            if (!await plan.addRoom(draft)) return;
             show(`เพิ่ม ${draft.name} แล้ว`, plan.undo);
           }
           setRoomForm(null);
         }}
-        onDelete={() => {
+        onDelete={async () => {
           const room = roomForm?.room;
           if (!room) return;
           const losing = plan.assignmentsInRoom(room.id);
-          plan.removeRoom(room.id);
+          if (!await plan.removeRoom(room.id)) return;
           show(
             losing > 0
               ? `ลบ ${room.name} แล้ว · ${formatNumber(losing)} คาบกลับไปเป็นวิชาที่ยังไม่ได้จัด`

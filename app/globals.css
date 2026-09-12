@@ -719,3 +719,11 @@ out — but it should never happen without the reader seeing it. */
    shown in a face where 0 and O are not the same shape. */
 .checklist-code { width: 100%; max-width: 92px; min-height: 34px; padding: 0 7px; border: 1px solid #dce2ec; border-radius: 8px; color: var(--ink); background: #fbfcfe; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
 .checklist-code:focus { border-color: #81a7ef; box-shadow: 0 0 0 3px rgba(59,112,220,.12); outline: 0; }
+
+/* Persistence controls remain available after route changes and read failures. */
+.plan-storage { margin-bottom: 1rem; }
+.plan-storage-actions { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; }
+.plan-storage-actions > span { margin-right: auto; font-size: .85rem; }
+.plan-storage-error { margin-top: .75rem; padding: 1rem; border: 1px solid #b45309; border-radius: .75rem; background: #fffbeb; color: #78350f; }
+.plan-storage-error p { margin: 0 0 .6rem; }
+.plan-storage-error button { margin: .25rem .5rem .25rem 0; }

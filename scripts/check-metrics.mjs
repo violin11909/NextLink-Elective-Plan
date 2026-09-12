@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import { planMetrics } from '../lib/plan-metrics.ts';
+import { dayFilter, periodFilter } from '../lib/filter-values.ts';
+const rooms = [{ id: 'ready', tier: 'READY', blockedSlots: [{ slotId: 'MON_AM' }] }, { id: 'approval', tier: 'NEEDS_APPROVAL', blockedSlots: [] }];
+const assignments = [{ roomId: 'ready', slotId: 'TUE_AM' }, { roomId: 'ready', slotId: 'TUE_AM' }, { roomId: 'approval', slotId: 'TUE_AM' }, { roomId: 'ready', slotId: 'MON_AM' }, { roomId: null, slotId: 'WED_AM' }];
+const metrics = planMetrics(rooms, assignments, [{ courseIds: ['a', 'b'] }, { courseIds: ['a'] }, { courseIds: ['unplaced'] }]);
+assert.deepEqual(metrics, { readyCapacity: 17, roomSlotsUsed: 1, utilisation: 6, flaggedCourses: 3 });
+assert.equal(planMetrics([], assignments, []).utilisation, 0);
+assert.equal(periodFilter('INVALID'), ''); assert.equal(dayFilter('SUNDAY'), '');
+assert.equal(periodFilter('PM'), 'PM'); assert.equal(dayFilter('SAT'), 'SAT');
+console.log('metrics/filter boundaries: ok (4 checks)');

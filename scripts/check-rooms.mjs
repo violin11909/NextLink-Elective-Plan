@@ -51,7 +51,7 @@ const room = (id, over = {}) => ({
 
 const draft = (over = {}) => ({
   name: over.name ?? "ตึกร้อยปี ห้อง 406",
-  building: over.building ?? "ตึกร้อยปี (คณะวิศวะ)",
+  building: over.building ?? "ตึกร้อยปี (คณะวิศวะฯ)",
   floor: over.floor ?? "4",
   seats: over.seats ?? 50,
   seatsIsEstimated: over.seatsIsEstimated ?? true,
@@ -124,10 +124,10 @@ check("removing the same room twice does not queue it twice", () => {
 /* ---- ids and validation ---------------------------------------------- */
 
 check("ids are ASCII, derived from the name, and never collide", () => {
-  const first = makeRoomId(draft({ name: "ตึกร้อยปี ห้อง 406", building: "ตึกร้อยปี (คณะวิศวะ)" }), []);
+  const first = makeRoomId(draft({ name: "ตึกร้อยปี ห้อง 406", building: "ตึกร้อยปี (คณะวิศวะฯ)" }), []);
   if (!/^[a-z0-9-]+$/.test(first)) return `not a plain ASCII id: ${first}`;
   if (!first.includes("406")) return `the room number is missing from ${first}`;
-  const second = makeRoomId(draft({ name: "ตึกร้อยปี ห้อง 406", building: "ตึกร้อยปี (คณะวิศวะ)" }), [first]);
+  const second = makeRoomId(draft({ name: "ตึกร้อยปี ห้อง 406", building: "ตึกร้อยปี (คณะวิศวะฯ)" }), [first]);
   if (second === first) return "two rooms were given the same id";
   if (!/[a-z]/.test(first)) return `an id of digits alone reads as a page number: ${first}`;
   const noAscii = makeRoomId(draft({ name: "ห้องประชุมใหญ่", building: "อาคารเรียนรวม" }), []);
@@ -158,13 +158,13 @@ check("the form refuses what the data model cannot carry", () => {
 });
 
 check("two rooms cannot share a name in one building, but may across buildings", () => {
-  const rooms = [...SEED, room("eng100-405", { name: "ห้อง 405", building: "ตึกร้อยปี (คณะวิศวะ)" })];
-  const clash = validateRoomDraft(draft({ name: "ห้อง 405", building: "ตึกร้อยปี (คณะวิศวะ)" }), rooms);
+  const rooms = [...SEED, room("eng100-405", { name: "ห้อง 405", building: "ตึกร้อยปี (คณะวิศวะฯ)" })];
+  const clash = validateRoomDraft(draft({ name: "ห้อง 405", building: "ตึกร้อยปี (คณะวิศวะฯ)" }), rooms);
   if (!clash) return "a duplicate name in the same building was accepted";
-  const other = validateRoomDraft(draft({ name: "ห้อง 405", building: "ตึก 3 (คณะวิศวะ)" }), rooms);
+  const other = validateRoomDraft(draft({ name: "ห้อง 405", building: "ตึก 3 (คณะวิศวะฯ)" }), rooms);
   if (other) return `the same number in another building was refused: ${other}`;
   // Editing a room must not trip over its own name.
-  return validateRoomDraft(draft({ name: "ห้อง 405", building: "ตึกร้อยปี (คณะวิศวะ)" }), rooms, "eng100-405") === null
+  return validateRoomDraft(draft({ name: "ห้อง 405", building: "ตึกร้อยปี (คณะวิศวะฯ)" }), rooms, "eng100-405") === null
     ? null
     : "a room could not be saved under the name it already has";
 });

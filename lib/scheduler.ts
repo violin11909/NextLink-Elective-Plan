@@ -1,4 +1,7 @@
 import { PERIODS, overlaps, parseSlotId, slotRank, type DayKey, type SlotId } from "./slots.ts";
+import { DEFAULT_SCHEDULER_OPTIONS, teachingBlockers, type SchedulerOptions } from "./schedule-policy.ts";
+import { nextAssignmentId } from "./assignments.ts";
+export type { SchedulerOptions } from "./schedule-policy.ts";
 import type {
   Assignment,
   BlockerCode,
@@ -52,18 +55,7 @@ export const SCHEDULER_WEIGHTS = {
   sameCourseSameDay: -50,
 } as const;
 
-export type SchedulerOptions = {
-  /**
-   * Treat one company as able to staff only one class at a time. True by
-   * default: most providers send a single team. Turn it off for a provider
-   * that has confirmed it can run two rooms at once.
-   */
-  providerIsSingleTeam?: boolean;
-  /** How many blocking assignments deep to reshuffle. 0 disables backtracking. */
-  backtrackDepth?: number;
-};
-
-const DEFAULTS: Required<SchedulerOptions> = { providerIsSingleTeam: true, backtrackDepth: 2 };
+const DEFAULTS = DEFAULT_SCHEDULER_OPTIONS;
 
 /** What every rule below needs to look things up. Built once per run. */
 type Ctx = {
@@ -89,10 +81,6 @@ function dayOf(slotId: SlotId): DayKey {
   return parseSlotId(slotId).day;
 }
 
-function assignmentId(courseId: string, slotId: SlotId): string {
-  return `${courseId}@${slotId}`;
-}
-
 /** ONLINE courses occupy no room, so every room rule is skipped for them. */
 function needsRoom(course: PlanCourse): boolean {
   return course.deliveryMode !== "ONLINE";
@@ -114,6 +102,7 @@ function blockersFor(
 ): BlockerCode[] {
   const found: BlockerCode[] = [];
   if (!course.availability.includes(slotId)) found.push("OUTSIDE_AVAILABILITY");
+  if (needsRoom(course) && !room) found.push("NO_ROOM_AVAILABLE");
 
   const { startTime, endTime } = defaultTimesFor(slotId);
   const day = dayOf(slotId);
@@ -128,18 +117,8 @@ function blockersFor(
 
   for (const item of clashing) {
     const other = ctx.coursesById.get(item.courseId);
-    if (!other || other.id === course.id) continue;
-    if (other.instructor === course.instructor && !found.includes("INSTRUCTOR_BUSY")) {
-      found.push("INSTRUCTOR_BUSY");
-    }
-    if (
-      ctx.options.providerIsSingleTeam &&
-      other.provider === course.provider &&
-      other.instructor !== course.instructor &&
-      !found.includes("PROVIDER_BUSY")
-    ) {
-      found.push("PROVIDER_BUSY");
-    }
+    if (!other) continue;
+    for (const code of teachingBlockers(course, other, ctx.options)) if (!found.includes(code)) found.push(code);
   }
 
   return found;
@@ -204,15 +183,19 @@ function candidatesFor(course: PlanCourse, placed: Assignment[], ctx: Ctx): Cand
 
   const roomRank = new Map(ctx.rooms.map((room, index) => [room.id, index]));
   return found.sort((a, b) => {
+    // The fallback pass may rehouse an earlier course. Keep READY a hard
+    // priority for those moves too, ahead of every preference score.
+    const tier = Number(a.room?.tier === "NEEDS_APPROVAL") - Number(b.room?.tier === "NEEDS_APPROVAL");
+    if (tier) return tier;
     if (b.score !== a.score) return b.score - a.score;
     if (a.slotId !== b.slotId) return slotRank(a.slotId) - slotRank(b.slotId);
     return (roomRank.get(a.room?.id ?? "") ?? 0) - (roomRank.get(b.room?.id ?? "") ?? 0);
   });
 }
 
-function toAssignment(course: PlanCourse, candidate: Candidate, source: Assignment["source"]): Assignment {
+function toAssignment(course: PlanCourse, candidate: Candidate, source: Assignment["source"], placed: Assignment[]): Assignment {
   return {
-    id: assignmentId(course.id, candidate.slotId),
+    id: nextAssignmentId(course.id, placed),
     courseId: course.id,
     slotId: candidate.slotId,
     roomId: candidate.room?.id ?? null,
@@ -368,7 +351,7 @@ function explain(course: PlanCourse, placed: Assignment[], ctx: Ctx): FailureRea
  */
 function placeWithBacktrack(course: PlanCourse, placed: Assignment[], ctx: Ctx, depth: number): Assignment[] | null {
   const direct = candidatesFor(course, placed, ctx);
-  if (direct.length > 0) return [...placed, toAssignment(course, direct[0], "AUTO")];
+  if (direct.length > 0) return [...placed, toAssignment(course, direct[0], "AUTO", placed)];
   if (depth <= 0) return null;
 
   const taken = new Set(placed.filter((item) => item.courseId === course.id).map((item) => item.slotId));
@@ -394,7 +377,7 @@ function placeWithBacktrack(course: PlanCourse, placed: Assignment[], ctx: Ctx, 
       const forCourse = candidatesFor(course, without, ctx).filter((candidate) => candidate.slotId === slotId);
       if (forCourse.length === 0) continue;
 
-      const withTarget = [...without, toAssignment(course, forCourse[0], "AUTO")];
+      const withTarget = [...without, toAssignment(course, forCourse[0], "AUTO", without)];
       const rehoused = placeWithBacktrack(blockerCourse, withTarget, ctx, depth - 1);
       if (rehoused) return rehoused;
     }
@@ -422,7 +405,7 @@ export function autoAssign(input: {
   const options = { ...DEFAULTS, ...input.options };
   const ctx = makeCtx(input.courses, input.rooms, options);
 
-  let placed: Assignment[] = [...(input.locked ?? [])];
+  let placed: Assignment[] = [...new Map((input.locked ?? []).map((item) => [item.id, item])).values()];
   const unassigned: Unassigned[] = [];
 
   const remaining = new Map<string, number>();
@@ -485,10 +468,8 @@ export function sortAssignments(assignments: Assignment[]): Assignment[] {
  * only open the Faculty of Engineering rooms to whatever is left over.
  *
  * Two passes rather than a preference weight, so the guarantee is absolute: no
- * course is ever put in a room that needs a request while a จุฬาพัฒน์ room
- * that fits it sits empty. The second pass treats the first pass's results as
- * fixed, which also means adding those rooms can never disturb a placement
- * someone has already read.
+ * course prefers a READY room whenever a legal READY placement exists. The
+ * fallback may rehouse unlocked first-pass assignments; user locks stay fixed.
  */
 export function planSchedule(input: {
   courses: PlanCourse[];
@@ -501,17 +482,7 @@ export function planSchedule(input: {
   if (first.unassigned.length === 0 || ready.length === input.rooms.length) return first;
 
   const stuck = new Set(first.unassigned.map((entry) => entry.courseId));
-  /*
-   * The second pass gets the WHOLE course list, not just the stuck ones.
-   *
-   * It only *places* the stuck ones — everything else arrives already placed in
-   * `locked`, so its remaining-session count is zero and it is never picked. But
-   * the rules need to look those courses up by id: passing a filtered list left
-   * `blockersFor` unable to resolve the course behind a locked assignment, so
-   * the instructor and provider checks silently skipped it and a company got
-   * booked to teach two classes at once — in a different room, which is why the
-   * room check did not catch it either.
-   */
+  // Keep all courses in the lookup, including the first pass's teachers.
   const second = autoAssign({
     courses: input.courses,
     rooms: input.rooms,
@@ -519,7 +490,7 @@ export function planSchedule(input: {
     options: input.options,
   });
 
-  const fromFirst = first.assignments.filter((item) => !stuck.has(item.courseId));
-  const merged = [...fromFirst, ...second.assignments.filter((item) => stuck.has(item.courseId))];
-  return { assignments: sortAssignments(merged), unassigned: second.unassigned };
+  // Backtracking can have moved an unlocked first-pass course. Returning its
+  // old position here would resurrect conflicts the second pass just solved.
+  return second;
 }

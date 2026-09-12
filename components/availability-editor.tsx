@@ -10,6 +10,7 @@ import { SlotFilters, matchesSlotFilter } from "@/components/slot-filters";
 import { DAYS, DAY_SHORT, PERIODS, PERIOD_KEYS, makeSlotId, slotLabel, type DayKey, type PeriodKey, type SlotId } from "@/lib/slots.ts";
 import type { PlanPayload } from "@/lib/plan-types.ts";
 import { usePlanState } from "@/lib/use-plan-state";
+import { dayFilter, periodFilter } from "@/lib/filter-values.ts";
 import { useUrlFilters } from "@/lib/use-url-filters";
 
 /**
@@ -33,10 +34,10 @@ export function AvailabilityEditor({ payload }: { payload: PlanPayload }) {
   // Arriving from a company name on the overview lands here with that company
   // already filled in, which is the only reason that link is worth clicking.
   useUrlFilters({ q: search, provider, day, period }, (found) => {
-    if (found.q) setSearch(found.q);
-    if (found.provider) setProvider(found.provider);
-    if (found.day) setDay(found.day as DayKey);
-    if (found.period) setPeriod(found.period as PeriodKey);
+    setSearch(found.q ?? "");
+    setProvider(found.provider ?? "");
+    setDay(dayFilter(found.day));
+    setPeriod(periodFilter(found.period));
   });
 
   const rows = useMemo(() => {
@@ -53,13 +54,10 @@ export function AvailabilityEditor({ payload }: { payload: PlanPayload }) {
     });
   }, [plan.courses, deferredSearch, deferredProvider, day, period]);
 
-  const toggleSlot = (courseId: string, slotId: SlotId) => {
+  const toggleSlot = async (courseId: string, slotId: SlotId) => {
     const course = plan.courses.find((item) => item.id === courseId);
     if (!course) return;
-    const next = course.availability.includes(slotId)
-      ? course.availability.filter((item) => item !== slotId)
-      : [...course.availability, slotId];
-    plan.setAvailability(courseId, next);
+    if (!await plan.toggleAvailability(courseId, slotId)) return;
     show(
       `${course.title}: ${course.availability.includes(slotId) ? "เอา" : "เพิ่ม"}${slotLabel(slotId)}`,
       plan.undo,

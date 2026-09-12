@@ -2,6 +2,8 @@
 
 import { useDeferredValue, useMemo, useState } from "react";
 import Link from "next/link";
+import { ChecklistCode } from "@/components/checklist-code";
+import { dayFilter, periodFilter } from "@/lib/filter-values.ts";
 import { EmptyResult } from "@/components/empty-result";
 import { FilterSummary } from "@/components/filter-summary";
 import { Pager } from "@/components/pager";
@@ -73,6 +75,7 @@ export function CourseList({
   const [view, setView] = useState<ViewMode>("table");
   const [checklistFilter, setChecklistFilter] = useState<ChecklistFilter>("all");
   const [page, setPage] = useState(1);
+  const [editingCode, setEditingCode] = useState<string | null>(null);
   const deferredSearch = useDeferredValue(search);
 
   /** null while the current term is selected — the planner's own data. */
@@ -93,21 +96,20 @@ export function CourseList({
       q: search,
       day,
       period,
-      placement: placement === "all" ? "" : placement,
+      placement: !archive && !checklistView && placement !== "all" ? placement : "",
       term: termId === currentTerm.id ? "" : termId,
       view: checklistView ? "checklist" : "",
       done: checklistView && checklistFilter !== "all" ? checklistFilter : "",
     },
     (found) => {
-      if (found.q) setSearch(found.q);
-      if (found.day) setDay(found.day as DayKey);
-      if (found.period) setPeriod(found.period as PeriodKey);
-      if (found.placement === "placed" || found.placement === "unplaced") setPlacement(found.placement);
-      if (found.view === "checklist") setView("checklist");
-      if (found.done === "incomplete" || found.done === "complete") setChecklistFilter(found.done);
-      // An id from an old link may name a term that is no longer published;
-      // silently staying on the current term beats an empty page.
-      if (found.term && terms.some((term) => term.id === found.term)) setTermId(found.term);
+      setSearch(found.q ?? "");
+      setDay(dayFilter(found.day));
+      setPeriod(periodFilter(found.period));
+      setPlacement(found.placement === "placed" || found.placement === "unplaced" ? found.placement : "all");
+      setView(found.view === "checklist" ? "checklist" : "table");
+      setChecklistFilter(found.done === "incomplete" || found.done === "complete" ? found.done : "all");
+      setTermId(terms.some((term) => term.id === found.term) ? found.term : currentTerm.id);
+      setPage(1);
     },
   );
 
@@ -165,11 +167,11 @@ export function CourseList({
         if (!matchesSlotFilter(course.availability, day, period)) return false;
         // Only the current term has a "still to do" state; in a finished term
         // every course listed is a course that ran.
-        if (!archive) {
+        if (!archive && !checklistView) {
           if (placement === "placed" && placed.length < course.sessionsPerWeek) return false;
           if (placement === "unplaced" && placed.length >= course.sessionsPerWeek) return false;
         }
-        if (checklistView && checklistFilter !== "all") {
+        if (checklistView && checklistFilter !== "all" && editingCode !== course.id) {
           const complete = isChecklistComplete(checklist);
           if (checklistFilter === "complete" && !complete) return false;
           if (checklistFilter === "incomplete" && complete) return false;
@@ -190,6 +192,7 @@ export function CourseList({
     placement,
     checklistView,
     checklistFilter,
+    editingCode,
     plan,
   ]);
 
@@ -239,6 +242,8 @@ export function CourseList({
 
   const changeView = (next: ViewMode) => {
     setView(next);
+    setPlacement("all");
+    setEditingCode(null);
     setPage(1);
   };
 
@@ -246,13 +251,11 @@ export function CourseList({
   const checklistControl = (courseId: string, courseTitle: string, checklist: CourseChecklist, field: ChecklistField) => {
     if (field.kind === "code") {
       return (
-        <input
-          className="checklist-code"
-          type="text"
+        <ChecklistCode
           value={checklist.mcvJoinCode}
-          placeholder="ยังไม่มีรหัส"
-          aria-label={`${field.label} — ${courseTitle}`}
-          onChange={(event) => plan.setChecklistField(courseId, checklistPatch(field, event.target.value))}
+          label={`${field.label} — ${courseTitle}`}
+          onChange={(value) => { void plan.setChecklistField(courseId, checklistPatch(field, value)); }}
+          onEditing={(editing) => setEditingCode(editing ? courseId : null)}
         />
       );
     }
@@ -601,7 +604,7 @@ export function CourseList({
                           <span className="status-stack">
                             {placed.map((item) => (
                               <span className="room-tag" key={item.key}>
-                                {item.roomLabel ?? "ออนไลน์"}
+                                {item.roomLabel ?? "ยังไม่มีห้อง"}
                               </span>
                             ))}
                           </span>

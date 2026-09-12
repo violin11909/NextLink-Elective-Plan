@@ -52,7 +52,7 @@ export function CourseChip({
         <small>
           {course.provider}
           {showTime ? ` · ${assignment.startTime}–${assignment.endTime}` : ""}
-          {showRoom ? (room ? ` · ${room.name}` : " · ออนไลน์") : ""}
+          {showRoom ? (room ? ` · ${room.name}` : course.deliveryMode === "ONLINE" ? " · ออนไลน์" : " · ยังไม่มีห้อง") : ""}
         </small>
       </button>
       <span className="chip-actions">

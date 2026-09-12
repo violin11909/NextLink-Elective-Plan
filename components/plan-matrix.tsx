@@ -46,8 +46,8 @@ export function PlanMatrix({
   assignments: Assignment[];
   conflicts: Conflict[];
   unplaced: Array<{ course: PlanCourse; missing: number }>;
-  onPlace: (courseId: string, slotId: SlotId, roomId: string | null) => void;
-  onMove: (assignmentId: string, slotId: SlotId, roomId: string | null) => void;
+  onPlace: (courseId: string, slotId: SlotId, roomId: string | null) => Promise<boolean>;
+  onMove: (assignmentId: string, slotId: SlotId, roomId: string | null) => Promise<boolean>;
   onToggleLock: (assignmentId: string) => void;
   onRemove: (assignmentId: string) => void;
   /** Called when a drop lands somewhere the rules object to, so the page can say so. */
@@ -72,7 +72,7 @@ export function PlanMatrix({
   const columns = useMemo(
     () => [
       ...rooms.map((room) => {
-        // "ตึก 4 (คณะวิศวะ)" and "ตึก 4 ชั้น 17 ห้อง 17-02" share only the part
+        // "ตึก 4 (คณะวิศวะฯ)" and "ตึก 4 ชั้น 17 ห้อง 17-02" share only the part
         // before the parenthesis, so strip on that rather than the whole label.
         const prefix = room.building.split(" (")[0];
         return {
@@ -94,6 +94,24 @@ export function PlanMatrix({
   useEffect(() => {
     onHeldChange?.(heldCourse);
   }, [heldCourse, onHeldChange]);
+
+  /**
+   * Escape puts the card down.
+   *
+   * Placing mode changes what a click on the board means, so there has to be a
+   * way out of it that does not depend on finding the one card that started
+   * it — the card may be off-screen by the time the reader wants out.
+   */
+  useEffect(() => {
+    if (!held) return;
+    const onKey = (event: globalThis.KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setHeld(null);
+      setHover(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [held]);
 
   const roomIdFor = (course: PlanCourse, columnKey: string) =>
     course.deliveryMode === "ONLINE" || columnKey === ONLINE_COLUMN ? null : columnKey;
@@ -120,7 +138,7 @@ export function PlanMatrix({
   const roomWouldBeIgnored = (course: PlanCourse, columnKey: string) =>
     course.deliveryMode === "ONLINE" && columnKey !== ONLINE_COLUMN;
 
-  const drop = (slotId: SlotId, columnKey: string, item: Held) => {
+  const drop = async (slotId: SlotId, columnKey: string, item: Held) => {
     const course = coursesById.get(item.kind === "assignment" ? item.courseId : item.id);
     if (!course) return;
     const ignore = item.kind === "assignment" ? item.id : undefined;
@@ -128,15 +146,21 @@ export function PlanMatrix({
     const roomId = roomIdFor(course, columnKey);
     const roomIgnored = roomWouldBeIgnored(course, columnKey);
 
-    if (item.kind === "assignment") onMove(item.id, slotId, roomId);
-    else onPlace(course.id, slotId, roomId);
+    const saved = item.kind === "assignment" ? await onMove(item.id, slotId, roomId) : await onPlace(course.id, slotId, roomId);
+
+    // The card is put down whatever the answer was. While one is held every
+    // cell is a drop target, and a card *left* held after a refusal means the
+    // next click on any card is read as another drop instead of picking that
+    // card up — the board stops responding to everything except the card it is
+    // still holding, which is indistinguishable from a frozen page.
+    setHeld(null);
+    setHover(null);
+    if (!saved) return;
 
     // Dropped anyway, then told why. Refusing the drop outright would mean a
     // coordinator who has just been given a new time on the phone cannot record
     // it until the data catches up, and that is how a planner gets abandoned.
     if (blockers.length > 0 || roomIgnored) onBlockedDrop(course.title, slotId, blockers, roomIgnored);
-    setHeld(null);
-    setHover(null);
   };
 
   const cellState = (slotId: SlotId, columnKey: string) => {

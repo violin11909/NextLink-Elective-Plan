@@ -114,5 +114,13 @@ export function overlaps(startA: string, endA: string, startB: string, endB: str
 /** Does a real time range stay inside its period's nominal bounds? */
 export function fitsInPeriod(period: PeriodKey, start: string, end: string): boolean {
   const bounds = PERIODS[period];
-  return toMinutes(start) >= toMinutes(bounds.start) && toMinutes(end) <= toMinutes(bounds.end);
+  return isTimeRange(start, end) && toMinutes(start) >= toMinutes(bounds.start) && toMinutes(end) <= toMinutes(bounds.end);
+}
+
+export function isTime(value: unknown): value is string {
+  return typeof value === "string" && /^(?:[01]\d|2[0-3]):[0-5]\d$/.test(value);
+}
+
+export function isTimeRange(start: unknown, end: unknown): boolean {
+  return isTime(start) && isTime(end) && start < end;
 }

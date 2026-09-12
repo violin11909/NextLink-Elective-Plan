@@ -1,5 +1,6 @@
 import { personName } from "./format.ts";
-import { DAY_LABELS, PERIODS, overlaps, parseSlotId, slotLabel } from "./slots.ts";
+import { DAY_LABELS, PERIODS, isTimeRange, overlaps, parseSlotId, slotLabel } from "./slots.ts";
+import { teachingBlockers, type SchedulerOptions } from "./schedule-policy.ts";
 import type { Assignment, BlockerCode, PlanCourse, PlanRoom } from "./plan-types.ts";
 import type { QueueKind } from "./queue.ts";
 
@@ -25,6 +26,8 @@ export type ConflictCode =
   | "SPILLS_PERIOD"
   | "UNDER_SCHEDULED"
   | "NO_AVAILABILITY"
+  | "INVALID_TIME"
+  | "OVER_SCHEDULED"
   | "NEEDS_ROOM_APPROVAL";
 
 export type Conflict = {
@@ -54,6 +57,8 @@ const SEVERITY: Record<ConflictCode, QueueKind> = {
   NO_AVAILABILITY: "WAITING",
   NEEDS_ROOM_APPROVAL: "WAITING",
   SPILLS_PERIOD: "IN_PROGRESS",
+  INVALID_TIME: "BLOCKED",
+  OVER_SCHEDULED: "BLOCKED",
 };
 
 /*
@@ -82,6 +87,7 @@ export function detectConflicts(input: {
   courses: PlanCourse[];
   rooms: PlanRoom[];
   assignments: Assignment[];
+  options?: SchedulerOptions;
 }): Conflict[] {
   const coursesById = new Map(input.courses.map((course) => [course.id, course]));
   const roomsById = new Map(input.rooms.map((room) => [room.id, room]));
@@ -139,7 +145,8 @@ export function detectConflicts(input: {
           [a.id, b.id],
         );
       }
-      if (courseA.instructor === courseB.instructor) {
+      const teaching = teachingBlockers(courseA, courseB, input.options);
+      if (teaching.includes("INSTRUCTOR_BUSY")) {
         add(
           "INSTRUCTOR_BUSY",
           pair,
@@ -148,17 +155,10 @@ export function detectConflicts(input: {
           [courseA.id, courseB.id],
           [a.id, b.id],
         );
-      } 
-      // else if (courseA.provider === courseB.provider) {
-      //   add(
-      //     "PROVIDER_BUSY",
-      //     pair,
-      //     `${courseA.provider} ต้องส่งสองทีมพร้อมกัน`,
-      //     `${courseA.title} และ ${courseB.title} ตรงกัน ${when}`,
-      //     [courseA.id, courseB.id],
-      //     [a.id, b.id],
-      //   );
-      // }
+      } else if (teaching.includes("PROVIDER_BUSY")) {
+        add("PROVIDER_BUSY", pair, `${courseA.provider} ต้องส่งสองทีมพร้อมกัน`,
+          `${courseA.title} และ ${courseB.title} ตรงกัน ${when}`, [courseA.id, courseB.id], [a.id, b.id]);
+      }
     }
   }
 
@@ -168,6 +168,14 @@ export function detectConflicts(input: {
     if (!course) continue;
     const { period } = parseSlotId(assignment.slotId);
     const room = assignment.roomId ? roomsById.get(assignment.roomId) : null;
+    if (course.deliveryMode !== "ONLINE" && !room) {
+      add("NO_ROOM_AVAILABLE", assignment.id, `${course.title} ยังไม่มีห้องเรียน`,
+        "ต้องเลือกห้องเรียนที่ยังอยู่ในระบบสำหรับวิชาในห้องเรียนหรือไฮบริด", [course.id], [assignment.id]);
+    }
+    if (!isTimeRange(assignment.startTime, assignment.endTime)) {
+      add("INVALID_TIME", assignment.id, `${course.title} มีเวลาสอนไม่ถูกต้อง`,
+        "เวลาเริ่มต้องอยู่ก่อนเวลาจบและเป็นเวลาในวันเดียวกัน", [course.id], [assignment.id]);
+    }
 
     if (!course.availability.includes(assignment.slotId)) {
       add(
@@ -206,7 +214,7 @@ export function detectConflicts(input: {
         add(
           "NEEDS_ROOM_APPROVAL",
           assignment.id,
-          "ต้องยื่นเรื่องขอใช้ห้องกับคณะวิศวะ",
+          "ต้องยื่นเรื่องขอใช้ห้องกับคณะวิศวะฯ",
           `${course.title} ถูกจัดลง ${room.name} ซึ่งไม่ใช่ห้องของภาค`,
           [course.id],
           [assignment.id],
@@ -242,6 +250,10 @@ export function detectConflicts(input: {
       continue;
     }
     const placed = input.assignments.filter((item) => item.courseId === course.id);
+    if (placed.length > course.sessionsPerWeek) {
+      add("OVER_SCHEDULED", course.id, `${course.title} ถูกจัดเกินจำนวนคาบ`,
+        `ต้องได้ ${course.sessionsPerWeek} คาบ แต่มี ${placed.length}`, [course.id], placed.map((item) => item.id));
+    }
     if (placed.length < course.sessionsPerWeek) {
       add(
         "UNDER_SCHEDULED",
