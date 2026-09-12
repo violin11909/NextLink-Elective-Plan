@@ -83,7 +83,7 @@ export function BookingDialog({
         {target && plan.error ? <p className="room-form-error" role="alert">{plan.error}</p> : null}
         <form className="room-form" onSubmit={(event) => { event.preventDefault(); submit(); }}>
           <label className="room-form-wide">
-            กันคาบนี้ไว้ให้
+            บันทึก
             <input
               type="text"
               list="booking-reasons"

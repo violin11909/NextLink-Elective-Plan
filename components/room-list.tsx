@@ -37,7 +37,7 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
     {
       tier: "NEEDS_APPROVAL",
       heading: "ต้องขออนุมัติก่อนใช้",
-      caption: "ห้องของคณะวิศวะ ต้องยื่นเรื่องหลายขั้นตอน ใช้เมื่อจุฬาพัฒน์ไม่พอ",
+      caption: "ห้องของคณะวิศวะฯ ต้องยื่นเรื่องหลายขั้นตอน ใช้เมื่อจุฬาพัฒน์ไม่พอ",
     },
   ];
 
@@ -71,7 +71,7 @@ export function RoomList({ payload }: { payload: PlanPayload }) {
             <div className="panel-heading">
               <div>
                 <p className="section-kicker">
-                  {group.tier === "READY" ? "จุฬาพัฒน์" : "อาคารคณะวิศวกรรมศาสตร์"}
+                  {group.tier === "READY" ? "อาคารจุฬาพัฒน์" : "อาคารคณะวิศวกรรมศาสตร์"}
                 </p>
                 <h3>{group.heading}</h3>
               </div>

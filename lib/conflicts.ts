@@ -214,7 +214,7 @@ export function detectConflicts(input: {
         add(
           "NEEDS_ROOM_APPROVAL",
           assignment.id,
-          "ต้องยื่นเรื่องขอใช้ห้องกับคณะวิศวะ",
+          "ต้องยื่นเรื่องขอใช้ห้องกับคณะวิศวะฯ",
           `${course.title} ถูกจัดลง ${room.name} ซึ่งไม่ใช่ห้องของภาค`,
           [course.id],
           [assignment.id],

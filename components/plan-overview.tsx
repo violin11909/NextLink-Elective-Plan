@@ -180,7 +180,7 @@ export function PlanOverview({ payload }: { payload: PlanPayload }) {
             <span className="kpi-label">ต้องขออนุมัติห้อง</span>
           </span>
           <p className="kpi-value">{formatNumber(needsApproval)}</p>
-          {/* <p className="kpi-note">คาบที่ตกไปอยู่ห้องตึก 3 / ตึก 4 ของคณะวิศวะ</p> */}
+          {/* <p className="kpi-note">คาบที่ตกไปอยู่ห้องตึก 3 / ตึก 4 ของคณะวิศวะฯ</p> */}
         </div>
       </div>
 

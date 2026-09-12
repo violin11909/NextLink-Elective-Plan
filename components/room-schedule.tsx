@@ -110,7 +110,7 @@ export function RoomSchedule({ payload, roomId }: { payload: PlanPayload; roomId
           <p className="intro-copy">
             {room.seatsIsEstimated ? "ประมาณ " : ""}
             {formatNumber(room.seats)} ที่นั่ง · ใช้ไปแล้ว {formatNumber(inThisRoom.length)} จาก {formatNumber(capacity)} คาบ
-            {room.tier === "NEEDS_APPROVAL" ? " · ห้องนี้ต้องยื่นเรื่องขอใช้กับคณะวิศวะก่อน" : ""}
+            {room.tier === "NEEDS_APPROVAL" ? " · ห้องนี้ต้องยื่นเรื่องขอใช้กับคณะวิศวะฯก่อน" : ""}
           </p>
         </div>
         <div className="intro-badges">

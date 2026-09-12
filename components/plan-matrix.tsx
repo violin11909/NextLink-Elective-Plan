@@ -72,7 +72,7 @@ export function PlanMatrix({
   const columns = useMemo(
     () => [
       ...rooms.map((room) => {
-        // "ตึก 4 (คณะวิศวะ)" and "ตึก 4 ชั้น 17 ห้อง 17-02" share only the part
+        // "ตึก 4 (คณะวิศวะฯ)" and "ตึก 4 ชั้น 17 ห้อง 17-02" share only the part
         // before the parenthesis, so strip on that rather than the whole label.
         const prefix = room.building.split(" (")[0];
         return {

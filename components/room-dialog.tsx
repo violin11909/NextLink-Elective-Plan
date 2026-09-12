@@ -123,7 +123,7 @@ export function RoomDialog({
               type="text"
               list="room-buildings"
               value={draft.building}
-              placeholder="เช่น ตึกร้อยปี (คณะวิศวะ)"
+              placeholder="เช่น ตึกร้อยปี (คณะวิศวะฯ)"
               onChange={(event) => setDraft({ ...draft, building: event.target.value })}
             />
             <datalist id="room-buildings">
@@ -191,7 +191,7 @@ export function RoomDialog({
               />
               <span>
                 ต้องขออนุมัติก่อนใช้
-                <small>ห้องของคณะวิศวะ ระบบจะใช้ต่อเมื่อห้องกลุ่มแรกไม่พอ</small>
+                <small>ห้องของคณะวิศวะฯ ระบบจะใช้ต่อเมื่อห้องกลุ่มแรกไม่พอ</small>
               </span>
             </label>
           </fieldset>
